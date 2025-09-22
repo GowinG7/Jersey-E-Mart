@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="signup.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
-
 <body>
     <div class="form-container">
         <h1>Create Account</h1>
