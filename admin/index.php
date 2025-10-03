@@ -1,3 +1,32 @@
+<?php
+include("../dbconnect.php");
+
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
+    $uname = $_POST['uname'];
+    $pass = $_POST['pass'];
+
+    $query = "Select * from admin_creden where admin_username = '$uname'";
+    $result = mysqli_query($conn, $query);
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        $row = mysqli_fetch_assoc($result);
+
+        if ($pass === $row['admin_pass']) {
+
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            echo "Incorrect password";
+        }
+    } else {
+        echo "Username not found";
+    }
+}
+?>
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -88,14 +117,14 @@
 </head>
 
 <body>
-    <form>
+    <form method="POST" action="">
         <div class="heading">Admin Login Panel</div>
         <div class="input">
-            <input type="text" name="adname" placeholder="Admin Name" required>
+            <input type="text" name="uname" placeholder="Username" required>
             <input type="password" name="pass" placeholder="Password" required>
         </div>
         <div class="button">
-            <button type="submit">Login</button>
+            <button type="submit" name="login">Login</button>
         </div>
 
     </form>
