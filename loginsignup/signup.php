@@ -1,7 +1,7 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,35 +12,27 @@
 <body>
     <div class="form-container">
         <h1>Create Account</h1>
-
-
-
         <form method="POST" action="signup.php" id="signup-form">
             <div class="form-group">
                 <label for="full_name">Full Name</label>
-                <input type="text" id="full_name" name="full_name" placeholder="Your full name (First, Middle, Last)"
-                    required>
-                <div class="error-message" id="full_name_error"></div> <!-- Error message container -->
+                <input type="text" id="full_name" name="full_name" placeholder="Your full name (First, Middle, Last)" required>
+                <div class="error-message" id="full_name_error"></div>
             </div>
-
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" placeholder="example:hello@123_" required>
-                <div class="error-message" id="username_error"></div> <!-- Error message container -->
+                <div class="error-message" id="username_error"></div>
             </div>
-
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" placeholder="example:name@gmail.com" required>
-                <div class="error-message" id="email_error"></div> <!-- Error message container -->
+                <div class="error-message" id="email_error"></div>
             </div>
-
             <div class="form-group">
                 <label for="phone">Phone Number (Optional)</label>
                 <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="Provide phone number for easy contact">
-                <div class="error-message" id="phone_error"></div> <!-- Error message container -->
+                <div class="error-message" id="phone_error"></div>
             </div>
-
             <div class="form-group">
                 <label for="question">Choose Security Question:</label>
                 <select id="question" name="question" style="color:grey" required>
@@ -58,38 +50,27 @@
                 <input type="text" id="answer" name="answer" placeholder="Enter your answer" required>
                 <div class="error-message" id="answer_error"></div>
             </div>
-
             <div class="form-row">
                 <div class="form-group">
                     <label for="pass">Password</label>
                     <input type="password" id="pass" name="pass" placeholder="Enter password" required>
-                    <div class="error-message" id="pass_error"></div> <!-- Error message container -->
+                    <div class="error-message" id="pass_error"></div>
                 </div>
-
                 <div class="form-group">
                     <label for="cpass">Confirm Password</label>
                     <input type="password" id="cpass" name="cpass" placeholder="Confirm password" required>
-                    <div class="error-message" id="cpass_error"></div> <!-- Error message container -->
+                    <div class="error-message" id="cpass_error"></div>
                 </div>
             </div>
-
             <button type="submit" class="btn-submit" name="submit">Sign Up</button>
         </form>
-
         <div class="form-footer">
             Already have an account?
             <a href="login.php">Log In</a>
         </div>
     </div>
-
     <script>
         $(document).ready(function () {
-            // Hide messages after 3 seconds
-            setTimeout(function () {
-                $(".alert").fadeOut("slow");
-            }, 4000);
-
-            // Field validations
             $('#full_name').on('blur', function () {
                 var fullName = $(this).val();
                 if (!/^[A-Za-z]+( [A-Za-z]+)*$/.test(fullName)) {
@@ -98,7 +79,6 @@
                     $('#full_name_error').hide();
                 }
             });
-
             $('#username').on('blur', function () {
                 var username = $(this).val();
                 if (!/^[a-zA-Z0-9_@]+$/.test(username)) {
@@ -107,7 +87,6 @@
                     $('#username_error').hide();
                 }
             });
-
             $('#email').on('blur', function () {
                 var email = $(this).val();
                 if (!/^[a-z0-9.]+@(gmail|yahoo|outlook)\.com$/.test(email)) {
@@ -116,16 +95,6 @@
                     $('#email_error').hide();
                 }
             });
-
-            /*   $('#phone').on('blur', function () {
-                   var phone = $(this).val();
-                   if (!/^\d{10}$/.test(phone)) {
-                       $('#phone_error').text('Phone number must be exactly 10 digits.').show();
-                   } else {
-                       $('#phone_error').hide();
-                   }
-               }); */
-
             $('#pass').on('blur', function () {
                 var pass = $(this).val();
                 if (pass.length < 8) {
@@ -135,16 +104,13 @@
                 }
             });
             $('#answer').on('blur', function () {
-                var answer = $(this).val().trim(); // Trim to remove extra spaces
+                var answer = $(this).val().trim();
                 if (answer === '') {
                     $('#answer_error').text('Security answer cannot be empty.').show();
                 } else {
                     $('#answer_error').hide();
                 }
             });
-
-
-
             $('#cpass').on('blur', function () {
                 var cpass = $(this).val();
                 if (cpass !== $('#pass').val()) {
@@ -156,5 +122,5 @@
         });
     </script>
 </body>
-
+</html>
 </html>

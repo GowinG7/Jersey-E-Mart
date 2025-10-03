@@ -9,9 +9,9 @@
         body {
             font-family: Arial, "Arial Black";
             min-height: 100vh;
-             margin: 0;
+            margin: 0;
             background-color: #f4f4f9;
-           
+
         }
 
         .form-container {
@@ -91,18 +91,18 @@
             background-color: #056b0a;
         }
 
-.footer {
-    margin-top: 15px;
-    font-size: 17px;
-    text-align: center;
-    color: #6f6b79e5;
-}
+        .footer {
+            margin-top: 15px;
+            font-size: 17px;
+            text-align: center;
+            color: #6f6b79e5;
+        }
 
-.footer a {
-    color: #5537a8f1;
-    text-decoration: none;
-    font-weight: bold;
-}
+        .footer a {
+            color: #5537a8f1;
+            text-decoration: none;
+            font-weight: bold;
+        }
 
         .footer a:hover {
             color: purple;
@@ -121,57 +121,57 @@
 
 <body>
     <div class="form-container">
-    <h1>Reset Password</h1>
-    <form method="post">
-        <div class="form-group">
-            <label for="identifier">Username or Email</label>
-            <input type="text" id="identifier" name="identifier" placeholder="Enter your username or email" required>
+        <h1>Reset Password</h1>
+        <form method="post">
+            <div class="form-group">
+                <label for="uname">Username or Email</label>
+                <input type="text" id="uname" name="uname" placeholder="Enter your username or email" required>
+            </div>
+            <div class="form-group">
+                <label for="question">Choose Security Question:</label>
+                <select id="question" name="question" required style="color:grey">
+                    <option value="color">Favourite Color</option>
+                    <option value="food">Favourite Food</option>
+                    <option value="fruit">Favourite Fruit</option>
+                    <option value="pet">Favourite Pet</option>
+                    <option value="subject">Favourite Subject</option>
+                    <option value="place">Favourite Place</option>
+                    <option value="laptop">Favourite Laptop</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="answer">Enter Answer:</label>
+                <input type="text" id="answer" name="answer" placeholder="Enter your answer" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" placeholder="Enter new password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password"
+                    required>
+            </div>
+            <button type="submit" class="btn-submit">Change Password</button>
+        </form>
+        <div class="footer">
+            <hr>
+            <p>Now you can <a href="login.php">Log in</a></p>
         </div>
-        <div class="form-group">
-            <label for="question">Choose Security Question:</label>
-            <select id="question" name="question" required style="color:grey">
-                <option value="color">Favourite Color</option>
-                <option value="food">Favourite Food</option>
-                <option value="fruit">Favourite Fruit</option>
-                <option value="pet">Favourite Pet</option>
-                <option value="subject">Favourite Subject</option>
-                <option value="place">Favourite Place</option>
-                <option value="laptop">Favourite Laptop</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="answer">Enter Answer:</label>
-            <input type="text" id="answer" name="answer" placeholder="Enter your answer" required>
-        </div>
-        <div class="form-group">
-            <label for="new_password">New Password</label>
-            <input type="password" id="new_password" name="new_password" placeholder="Enter new password" required>
-        </div>
-        <div class="form-group">
-            <label for="confirm_password">Confirm Password</label>
-            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password"
-                required>
-        </div>
-        <button type="submit" class="btn-submit">Change Password</button>
-    </form>
-    <div class="footer">
-        <hr>
-        <p>Now you can <a href="login.php">Log in</a></p>
-    </div>
     </div>
 
 
     <script>
         $(document).ready(function () {
-            // Real-time validation for Identifier
-            $("#identifier").on("blur keyup", function () {
-                $(".identifier-error").remove();
-                let identifier = $(this).val().trim();
+            // Real-time validation for uname
+            $("#uname").on("blur keyup", function () {
+                $(".uname-error").remove();
+                let uname = $(this).val().trim();
                 let usernameRegex = /^[a-zA-Z0-9_@]+$/;
                 let emailRegex = /^[a-z0-9.]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
 
-                if (identifier !== "" && (!usernameRegex.test(identifier) && !emailRegex.test(identifier))) {
-                    $(this).after('<span class="identifier-error" style="color:red;">Enter a valid username or email.</span>');
+                if (uname !== "" && (!usernameRegex.test(uname) && !emailRegex.test(uname))) {
+                    $(this).after('<span class="uname-error" style="color:red;">Enter a valid username or email.</span>');
                 }
             });
 

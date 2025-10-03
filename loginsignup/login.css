@@ -8,7 +8,6 @@
     --gray-text: #606770;
 }
 
-
 * {
     font-family: Arial, "Arial Black";
     margin: 0;
@@ -103,3 +102,19 @@ body {
     background: #ddd;
     margin: 15px 0;
 }
+/* Styling for error messages */
+.error-message {
+    color: red;
+    /* Ensure the text color is red */
+    font-size: 12px;
+    /* Smaller font size for error message */
+    margin-top: 5px;
+    /* Space between input field and error message */
+    display: none;
+    /* Initially hidden, shown when validation fails */
+    line-height: 1.2;
+    /* Ensure the text doesn't take up too much space */
+    word-wrap: break-word;
+    /* Prevent long words from breaking the layout */
+}
+
