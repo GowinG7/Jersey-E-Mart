@@ -110,6 +110,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
             text-decoration: underline;
             color: blue;
         }
+        input{
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid green;
+        }
+        input:focus {
+            outline: none;
+            border: 2px solid rgba(7, 83, 100, 0.79);
+        }
+        input:hover{
+            background-color: rgba(212, 192, 192, 0.16);
+        }
 
         .success {
             background-color: #d4edda;
