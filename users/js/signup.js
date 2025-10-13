@@ -1,4 +1,5 @@
 $(document).ready(function () {
+
   // Live validation
   $("#full_name").on("blur", function () {
     var fullName = $(this).val();
@@ -39,14 +40,12 @@ $(document).ready(function () {
     }
   });
 
-  $("#pass").on("blur", function () {
-    var pass = $(this).val();
-    if (pass.length < 8) {
-      $("#pass_error")
-        .text("Password must be at least 8 characters long.")
-        .show();
+  $("#phone").on("blur", function () {
+    var phone = $(this).val().trim();
+    if (phone.length < 10) {
+      $("#phone_error").text("Phone number must be at least 10 digits").show();
     } else {
-      $("#pass_error").hide();
+      $("#phone_error").hide();
     }
   });
 
@@ -59,6 +58,46 @@ $(document).ready(function () {
     }
   });
 
+  // $("#pass").on("blur", function () {
+  //   var pass = $(this).val();
+  //   if (pass.length < 8) {
+  //     $("#pass_error")
+  //       .text("Password must be at least 8 characters long.")
+  //       .show();
+  //   } else {
+  //     $("#pass_error").hide();
+  //   }
+  // });
+
+  // Password validation
+  $("#pass").on("blur", function () {
+    var pass = $(this).val();
+    //multiple errors dekhauna xa so array used grney
+    var errors = [];
+
+    if (pass.length < 8) {
+      errors.push("Password must be at least 8 characters long.");
+    }
+    if (!/[A-Z]/.test(pass)) {
+      errors.push("Password must contain at least one uppercase letter.");
+    }
+    if (!/[a-z]/.test(pass)) {
+      errors.push("Password must contain at least one lowercase letter.");
+    }
+    if (!/[0-9]/.test(pass)) {
+      errors.push("Password must contain at least one digit.");
+    }
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(pass)) {
+      errors.push("Password must contain at least one special character.");
+    }
+
+    if (errors.length > 0) {
+      $("#pass_error").html(errors.join("<br>")).show();
+    } else {
+      $("#pass_error").hide();
+    }
+  });
+
   $("#cpass").on("blur", function () {
     var cpass = $(this).val();
     if (cpass !== $("#pass").val()) {
@@ -68,11 +107,4 @@ $(document).ready(function () {
     }
   });
 
-  // Auto-hide success and error messages
-  if ($("#successMessage").length) {
-    setTimeout(() => $("#successMessage").fadeOut("slow"), 2000);
-  }
-  if ($("#errorMessage").length) {
-    setTimeout(() => $("#errorMessage").fadeOut("slow"), 2000);
-  }
 });

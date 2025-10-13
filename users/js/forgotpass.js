@@ -1,56 +1,37 @@
- $(document).ready(function () {
-    function isValidUsername(uname) {
-      return /^[a-zA-Z0-9_@]+$/.test(uname) || /^[a-z0-9.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i.test(uname);
+$(document).ready(function () {
+  // Username validation (can be normal username or email)
+  $("#uname").on("blur", function () {
+    var uname = $(this).val().trim();
+    if (
+      !/^[a-zA-Z0-9_@]+$/.test(uname) && // username pattern
+      !/^[a-z0-9.]+@(gmail|yahoo|outlook)\.com$/.test(uname) // email pattern
+    ) {
+      $("#uname_error").text("Enter a valid username or email.").show();
+    } else {
+      $("#uname_error").hide();
     }
+  });
 
-    function isValidPassword(pwd) {
-      return pwd.length >= 8;
+  // New password validation
+  $("#new_password").on("blur", function () {
+    var pwd = $(this).val().trim();
+    if (pwd.length < 8) {
+      $("#password_error").text("Password must be at least 8 characters long.").show();
+    } else {
+      $("#password_error").hide();
     }
+  });
 
-    function showError(input, message, className) {
-      $("." + className).remove();
-      input.after('<span class="' + className + '" style="color:red;">' + message + '</span>');
+  // Confirm password validation
+  $("#confirm_password").on("blur", function () {
+    var pwd = $("#new_password").val().trim();
+    var cpass = $(this).val().trim();
+    if (cpass !== pwd) {
+      $("#cpass_error").text("Passwords do not match.").show();
+    } else {
+      $("#cpass_error").hide();
     }
+  });
 
-    function clearError(className) {
-      $("." + className).remove();
-    }
-
-    $("#uname").on("input", function () {
-      let uname = $(this).val().trim();
-      if (uname && !isValidUsername(uname)) {
-        showError($(this), "Enter a valid username or email.", "uname-error");
-      } else {
-        clearError("uname-error");
-      }
-    });
-
-    $("#new_password").on("input", function () {
-      let pwd = $(this).val().trim();
-      if (!isValidPassword(pwd)) {
-        showError($(this), "Password must be at least 8 characters.", "password-error");
-      } else {
-        clearError("password-error");
-      }
-      $("#confirm_password").trigger("input"); // recheck match
-    });
-
-    $("#confirm_password").on("input", function () {
-      let pwd = $("#new_password").val().trim();
-      let confirm = $(this).val().trim();
-      if (confirm && pwd !== confirm) {
-        showError($(this), "Passwords do not match.", "confirm-password-error");
-      } else {
-        clearError("confirm-password-error");
-      }
-    });
-
-    $("form").on("submit", function (e) {
-      $("#uname, #new_password, #confirm_password").trigger("input");
-      if ($(".uname-error, .password-error, .confirm-password-error").length > 0) {
-        e.preventDefault();
-      }
-    });
-
-    setTimeout(() => $(".message").fadeOut("slow"), 3000);
- });
+ 
+});
