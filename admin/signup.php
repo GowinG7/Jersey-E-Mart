@@ -75,9 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Signup Form</title>
     <link rel="stylesheet" href="css/signup.css">
-    <!-- jquery v3.7.1 cdn -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-</head>
+   </head>
 
 <body>
 
