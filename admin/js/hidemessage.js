@@ -11,6 +11,6 @@ $(document).ready(function () {
     setTimeout(() => $("#successMessage").fadeOut("slow"), 2000);
   }
   if ($("#errorMessage").length) {
-    setTimeout(() => $("#errorMessage").fadeOut("slow"), 2000);
+    setTimeout(() => $("#errorMessage").fadeOut("slow"), 3000);
   }
 });

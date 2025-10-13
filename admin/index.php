@@ -4,29 +4,63 @@ require_once("../shared/dbconnect.php");
 include_once("../shared/commonlinks.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
-    $uname = $_POST['uname'];
-    $pass = $_POST['pass'];
+    // Get username and password from POST and trim extra spaces
+    $uname = trim($_POST['uname']);
+    $pass = trim($_POST['pass']);
 
-    $query = "SELECT * FROM admin_creden WHERE username = '$uname'";
-    $result = mysqli_query($conn, $query);
+    // Make sure fields are not empty
+    if (!empty($uname) && !empty($pass)) {
 
-    if ($result && mysqli_num_rows($result) > 0) {
-        $row = mysqli_fetch_assoc($result);
+        // Step 1: Prepare the SQL query with a placeholder (?)
+        $sql = "SELECT id, username, password FROM admin_creden WHERE username = ?";
+        $stmt = $conn->prepare($sql);
+        // Check if the prepared statement was successfully created
+        if ($stmt) {
+            // Step 2: Bind the actual value of $uname to the placeholder (s = string)
+            $stmt->bind_param("s", $uname);
 
-        // verify hashed password
-        if (password_verify($pass, $row['password'])) {
-            // login successful
-            // $_SESSION['successMessage'] = "Login Successful! Redirecting...";
-            header("Location: dashboard.php");
-            exit();
+            // Step 3: Execute the prepared statement
+            $stmt->execute();
+
+            // Step 4: Get the result set from the executed statement
+            $result = $stmt->get_result();
+
+            // Step 5: Check if any row exists with that username
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+
+                // Step 6: Verify the given password against the stored hashed password
+                if (password_verify($pass, $row['password'])) {
+                    //  Login successful → store session values
+                    $_SESSION['admin_id'] = $row['id'];
+                    $_SESSION['admin_user'] = $row['username'];
+
+                    // Redirect to dashboard
+                    header("Location: dashboard.php");
+                    exit();
+                } else {
+                    //  Password incorrect
+                    $_SESSION['errorMessage'] = "Incorrect password!";
+                }
+            } else {
+                //  Username not found in DB
+                $_SESSION['errorMessage'] = "Username not found!";
+            }
+
+            // Step 7: Close the prepared statement
+            $stmt->close();
         } else {
-            $_SESSION['errorMessage'] = "Incorrect password!";
+            // If preparing statement failed
+            $_SESSION['errorMessage'] = "Something went wrong with the query!";
         }
     } else {
-        $_SESSION['errorMessage'] = "Username not found!";
+        //  If any input field is empty
+        $_SESSION['errorMessage'] = "All fields are required!";
     }
 }
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -35,7 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login Panel</title>
     <!-- jquery v3.7.1 cdn -->
-    <script src="shared/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="css/index.css">
 </head>
 

@@ -5,38 +5,67 @@ include_once("../shared/commonlinks.php");
 
 // Check if the form has been submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
-    $uname = $_POST['uname'];
-    $pass = $_POST['pass'];
+    $uname = trim($_POST["uname"]);
+    $pass = trim($_POST["pass"]);
+    $errors = [];
 
-    // Array to hold messages
-    $messages = [];
-
-    // Check if username exists
-    $checkQuery = "SELECT * FROM admin_creden WHERE username = '$uname'";
-    $checkResult = mysqli_query($conn, $checkQuery);
-
-    if ($checkResult && mysqli_num_rows($checkResult) > 0) {
-        $messages[] = "Username already exists. Please choose a different username.";
-        $_SESSION['errorMessages'] = $messages;
-    } else {
-        // Hash the password securely
-        $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
-
-        // Insert new admin credentials
-        $insertQuery = "INSERT INTO admin_creden (username, password) VALUES ('$uname', '$hashedPass')";
-        if (mysqli_query($conn, $insertQuery)) {
-            $_SESSION['successMessage'] = "Signup successful. You can now log in.";
-        } else {
-            $messages[] = "Error: " . mysqli_error($conn);
-            $_SESSION['errorMessages'] = $messages;
-        }
+    // Username validation
+    if (!preg_match("/^[a-zA-Z0-9_@]+$/", $uname)) {
+        $errors[] = "Username can only contain letters, numbers, underscores and @";
     }
 
-    // Redirect to same page to show messages
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
+    // Password validation
+    if (strlen($pass) < 8) {
+        $errors[] = "Password must be at least 8 characters long";
+    }
+    //jata pani baye huney check grnu xa baney starting ra ending ko lagi ^ ra +$ pardaina 
+    if (!preg_match("/[A-Z]/", $pass)) {
+        $errors[] = "Password must contain at least one uppercase letter";
+    }
+    if (!preg_match("/[a-z]/", $pass)) {
+        $errors[] = "Password must contain at least one lowercase letter";
+    }
+    if (!preg_match("/[0-9]/", $pass)) {
+        $errors[] = "Password must contain at least one number";
+    }
+    if (!preg_match("/[\W]/", $pass)) {
+        $errors[] = "Password must contain at least one special character";
+    }
+
+    // Check for existing username
+    $sql = "select * from admin_creden where username = '$uname'";
+    $result = $conn->query($sql);
+    if ($result->num_rows > 0) {
+        $errors[] = "Username already exists. Please choose a different username.";
+    }
+
+    // If errors exist → store in session and redirect button submit garisake paxi dekhine erros ko lagi store grya session ma
+    if (!empty($errors)) {
+        $_SESSION['errorMessages'] = $errors;
+        header("Location: signup.php");
+        exit();
+    }
+
+    // Hash the password and insert new user
+    $hashedPassword = password_hash($pass, PASSWORD_DEFAULT);
+    $sql = "INSERT INTO admin_creden (username, password) VALUES (?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $uname, $hashedPassword);
+
+    if ($stmt->execute()) {
+        $_SESSION['successMessage'] = "Signup successful! You can now log in.";
+        $stmt->close();
+        header("Location: index.php");
+        exit();
+    } else {
+        $_SESSION['errorMessages'] = ["Error occurred during signup. Please try again."];
+        $stmt->close();
+        header("Location: signup.php");
+        exit();
+    }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -47,12 +76,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     <title>Admin Signup Form</title>
     <link rel="stylesheet" href="css/signup.css">
     <!-- jquery v3.7.1 cdn -->
-    <script src="shared/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 
 <body>
 
-    <form action="" method="POST">
+    <form id="signup-form" action="" method="POST">
         <div class="top">
             <h3>Admin Signup</h3>
         </div>
@@ -78,11 +107,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
         <div>
             <label for="uname">Username:</label>
             <input type="text" id="uname" name="uname" placeholder="Username" required>
+            <div class="error_message" id="uname_error"></div>
         </div>
 
         <div>
             <label for="pass">Password:</label>
             <input type="password" id="pass" name="pass" placeholder="Enter password" required>
+            <div class="error_message" id="pass_error"></div>
         </div>
 
         <button type="submit" name="submit">Sign Up</button>
@@ -97,7 +128,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
 
     <!-- offline jquery v3.7.1 script file -->
     <script src="../shared/jquery-3.7.1.min.js"></script>
-
+    <script src="js/signup.js"></script>
     <script src="js/hidemessage.js"></script>
 </body>
 
