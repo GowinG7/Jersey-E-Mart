@@ -55,12 +55,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     if ($stmt->execute()) {
         $_SESSION['successMessage'] = "Signup successful! You can now log in.";
         $stmt->close();
-        header("Location: index.php");
+        header("Location: " . $_SERVER['PHP_SELF']);
         exit();
     } else {
         $_SESSION['errorMessages'] = ["Error occurred during signup. Please try again."];
         $stmt->close();
-        header("Location: signup.php");
+        header("Location: " . $_SERVER['PHP_SELF']);
         exit();
     }
 }
