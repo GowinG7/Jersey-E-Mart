@@ -15,26 +15,6 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.message {
-  text-align: center;
-  font-size: 16px;
-  margin-bottom: 15px;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.message.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.message.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
 h1 {
   text-align: center;
   font-weight: 600;
@@ -104,4 +84,41 @@ h1 {
   height: 1px;
   background: #ddd;
   margin: 15px 0;
+}
+/* Styling for error messages that occurs while jquery live validation*/
+.error-message {
+  color: red;
+  /* Ensure the text color is red */
+  font-size: 12px;
+  /* Smaller font size for error message */
+  margin-top: 5px;
+  /* Space between input field and error message */
+  display: none;
+  /* Initially hidden, shown when validation fails */
+  line-height: 1.2;
+  /* Ensure the text doesn't take up too much space */
+  word-wrap: break-word;
+  /* Prevent long words from breaking the layout */
+}
+
+/* style for success and error messages that occurs after submitting form */
+/* after form submitted */
+.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 10px;
+  margin: 0 20px 10px 20px;
+  border-radius: 5px;
+  text-align: center;
+}
+/* after form submitted */
+.errormes {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 10px;
+  margin: 0 20px 10px 20px;
+  border-radius: 5px;
+  text-align: center;
 }

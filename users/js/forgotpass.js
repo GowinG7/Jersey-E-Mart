@@ -1,37 +1,41 @@
 $(document).ready(function () {
-  // Username validation (can be normal username or email)
-  $("#uname").on("blur", function () {
-    var uname = $(this).val().trim();
-    if (
-      !/^[a-zA-Z0-9_@]+$/.test(uname) && // username pattern
-      !/^[a-z0-9.]+@(gmail|yahoo|outlook)\.com$/.test(uname) // email pattern
-    ) {
-      $("#uname_error").text("Enter a valid username or email.").show();
-    } else {
-      $("#uname_error").hide();
-    }
-  });
-
   // New password validation
   $("#new_password").on("blur", function () {
-    var pwd = $(this).val().trim();
-    if (pwd.length < 8) {
-      $("#password_error").text("Password must be at least 8 characters long.").show();
+    var new_password = $(this).val();
+    //multiple errors dekhauna xa so array used grney
+    var errors = [];
+
+    if (new_password.length < 8) {
+      errors.push("Password must be at least 8 characters long.");
+    }
+    if (!/[A-Z]/.test(new_password))
+      errors.push("Password must contain at least one uppercase letter");
+
+    if (!/[a-z]/.test(new_password))
+      errors.push("Password must contain at least one lowercase letter");
+
+    if (!/[0-9]/.test(new_password))
+      errors.push("Password must contain at least one digit");
+
+    if (!/\W/.test(new_password))
+      errors.push("Password must contain atleast one special character");
+
+    if (errors.length > 0) {
+      $("#pass_error").html(errors.join("<br>")).show();
     } else {
-      $("#password_error").hide();
+      $("#pass_error").hide();
     }
   });
 
   // Confirm password validation
   $("#confirm_password").on("blur", function () {
-    var pwd = $("#new_password").val().trim();
-    var cpass = $(this).val().trim();
-    if (cpass !== pwd) {
+    var confirm_password = $(this).val();
+    var new_password = $("#new_password").val(); // re-get value here
+
+    if (confirm_password !== new_password) {
       $("#cpass_error").text("Passwords do not match.").show();
     } else {
       $("#cpass_error").hide();
     }
   });
-
- 
 });
