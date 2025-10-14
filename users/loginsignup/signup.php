@@ -6,14 +6,14 @@ include_once("../../shared/commonlinks.php");
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
 
     // Get form values in local variables
-    $name = $_POST['full_name'];
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone'];
-    $question = $_POST['question'];
-    $answer = $_POST['answer'];
-    $password = $_POST['pass'];
-    $cpassword = $_POST['cpass'];
+    $name = trim($_POST['full_name']);
+    $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
+    $phone = trim($_POST['phone']);
+    $question = trim($_POST['question']);
+    $answer = trim($_POST['answer']);
+    $password = trim($_POST['pass']);
+    $cpassword = trim($_POST['cpass']);
 
     $errors = array();
 
@@ -161,6 +161,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
                     <option value="laptop">Favourite Laptop</option>
                 </select>
             </div>
+            
             <div class="form-group">
                 <label for="answer">Enter Answer:</label>
                 <input type="text" id="answer" name="answer" placeholder="Enter your answer" required>
