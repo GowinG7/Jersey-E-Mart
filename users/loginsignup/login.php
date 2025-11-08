@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                     $_SESSION["user_id"] = $row["id"];
                     $_SESSION["user_name"] = $row["username"];
 
-                    header("Location: homepage.php");
+                    header("Location: ../homepage.php");
                     exit();
                 } else {
                     $_SESSION["errorMessage"] = "Incorrect password!";
