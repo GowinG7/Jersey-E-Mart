@@ -8,57 +8,11 @@ include_once '../shared/commonlinks.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
+    <title>Jersey Page</title>
 
     <style>
         body {
             background-color: rgb(180, 235, 230);
-        }
-
-        .carousel {
-            padding: 15px;
-            overflow: hidden;
-            border-radius: 12px;
-        }
-
-        /* Each slide fixed size and centered */
-        .carousel-item {
-            height: 420px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #ffffff98;
-            /* transition: opacity 1s ease-in-out; */
-        }
-
-
-        /* Image styling */
-        .carousel-img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            display: block;
-            margin: 0 auto;
-            border-radius: 10px;
-            transition: 2s all linear;
-        }
-
-        Prevent layout shift (the key fix) .carousel-inner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .carousel-fade .carousel-item {
-            opacity: 0;
-            transition-property: opacity;
-            transition-duration: 1s;
-            transition-timing-function: ease-in-out;
-        }
-
-        .carousel-fade .carousel-item.active {
-            opacity: 1;
         }
     </style>
 </head>
@@ -66,43 +20,31 @@ include_once '../shared/commonlinks.php';
 <body>
     <?php include_once 'header.php'; ?>
 
+    <h1 class="text-center mt-4">Explore Jersies </h1>
 
+    <!-- for search bar -->
+    <div class="container mt-3">
+        <div class="row justify-content-center">
+            <div class="col-sm-8 col-md-10 col-lg-12">
+                <form class="d-flex justify-content-center mx-auto" action="#" method="GET" style="max-width: 700px;">
+                    <!-- Dropdown for Jersey Type -->
+                    <select id="jerseyType" name="type" class="form-select me-2" style="max-width: 180px;">
+                        <option value="">Choose</option>
+                        <option value="national-football">Nepal National Football</option>
+                        <option value="national-cricket">Nepal National Cricket</option>
+                        <option value="npl">NPL Jersey</option>
+                    </select>
 
+                    <!-- Search Input -->
+                    <input id="searchInput" class="form-control me-2" type="search" name="query"
+                        placeholder="Search jersey..." aria-label="Search">
 
-    <!-- Carousel slides -->
-    <div class="container py-3">
-        <div id="carouselExampleAutoplaying" class="carousel slide carousel-fade" data-bs-ride="carousel"
-            data-bs-interval="2000">
-            <div class="carousel-inner">
-                <div class="carousel-item active">
-                    <img src="images/j1.png" class="carousel-img" alt="Jersey 1">
-                </div>
-                <div class="carousel-item">
-                    <img src="images/j2.png" class="carousel-img" alt="Jersey 2">
-                </div>
-                <div class="carousel-item">
-                    <img src="images/j3.png" class="carousel-img" alt="Jersey 3">
-                </div>
-                <div class="carousel-item">
-                    <img src="images/j4.png" class="carousel-img" alt="Jersey 4">
-                </div>
-                <div class="carousel-item">
-                    <img src="images/j5.png" class="carousel-img" alt="Jersey 5">
-                </div>
+                    <!-- Submit Button -->
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </form>
             </div>
         </div>
     </div>
-
-    <!-- <h1 class="text-center mt-4"><u>Explore Our Page</u></h1> -->
-
-
-    <h1 class="text-center mt-5 mb-4 display-5 fw-bold text-primary animate__animated animate__fadeInDown">
-        <span class="border-bottom border-3 border-success pb-2">Explore Our Page</span>
-    </h1>
-    <br>
-<hr>
-    <!-- <p class="text-center mb-4">Please check out our premium products</p> -->
-
 
 
     <div class="container my-5">
@@ -168,7 +110,7 @@ include_once '../shared/commonlinks.php';
                 </div>
             </div>
         </div>
-<hr>
+
         <!--  Nepal Cricket Section -->
         <h3 class="text-center mt-5 mb-4 fw-bold text-black">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
@@ -209,7 +151,7 @@ include_once '../shared/commonlinks.php';
                 </div>
             </div>
 
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-cricket-set">
+             <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-cricket-set">
                 <div class="card text-center shadow-sm border-0 h-100">
                     <img src="images/cricket/2024.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Cricket Full Set"
                         style="height:150px; width:auto; object-fit:contain;">
@@ -227,7 +169,7 @@ include_once '../shared/commonlinks.php';
             </div>
 
         </div>
-<hr>
+
         <!-- NPL Section -->
         <h3 class="text-center mt-5 mb-4 fw-bold text-black">Nepal Premier League (NPL)</h3>
         <div class="row justify-content-start">
@@ -269,7 +211,7 @@ include_once '../shared/commonlinks.php';
                 </div>
             </div>
 
-            <!-- NPL Jersey -->
+               <!-- NPL Jersey -->
             <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
                 <div class="card text-center shadow-sm border-0 h-100">
                     <img src="images/npl/janakpur.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
@@ -306,7 +248,7 @@ include_once '../shared/commonlinks.php';
                 </div>
             </div>
 
-            <!-- NPL Jersey -->
+               <!-- NPL Jersey -->
             <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
                 <div class="card text-center shadow-sm border-0 h-100">
                     <img src="images/npl/kathmandu.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
@@ -343,7 +285,7 @@ include_once '../shared/commonlinks.php';
                 </div>
             </div>
 
-            <!-- NPL Jersey -->
+               <!-- NPL Jersey -->
             <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
                 <div class="card text-center shadow-sm border-0 h-100">
                     <img src="images/npl/pokhara.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
@@ -383,10 +325,11 @@ include_once '../shared/commonlinks.php';
 
         </div>
     </div>
+
+
     <?php include_once 'footer.php'; ?>
 
-    <!-- For Explore our page text -->
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="js/jersey.js"></script>
 </body>
 
 </html>

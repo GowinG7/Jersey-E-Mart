@@ -24,8 +24,8 @@ include_once "../shared/commonlinks.php";
     <!-- Navbar Links -->
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
-        <li class="nav-item"><a class="nav-link me-3 active" href="#">Home</a></li>
-        <li class="nav-item"><a class="nav-link me-3" href="#">Jerseys</a></li>
+        <li class="nav-item"><a class="nav-link me-3 active" href="index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link me-3" href="jersey.php">Jerseys</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="#">Kits</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="#">Contact</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="#">About</a></li>
