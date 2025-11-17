@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
         <div class="heading">Admin Login Panel</div>
 
         <!-- Show messages -->
-        <?php
+        <?php  
         // if (isset($_SESSION['successMessage'])) {
         //     echo "<div class='success' id='successMessage'>" . $_SESSION['successMessage'] . "</div>";
         //     unset($_SESSION['successMessage']);
@@ -84,7 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
         if (isset($_SESSION['errorMessage'])) {
             echo "<div class='error' id='errorMessage'>" . $_SESSION['errorMessage'] . "</div>";
             unset($_SESSION['errorMessage']);
-        }
+              }
         ?>
 
         <div class="input">

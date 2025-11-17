@@ -1,0 +1,95 @@
+/* TOP BAR */
+.admin-topbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 70px;
+  background: #222;
+  color: white;
+  z-index: 1000;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* SIDEBAR (Desktop default) */
+.admin-sidebar {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  width: 220px;
+  height: calc(100vh - 70px);
+  background: #111;
+  border-right: 2px solid #333;
+  padding-top: 10px;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+/* CONTENT AREA */
+.admin-content {
+  margin-left: 240px;
+  margin-top: 80px;
+  padding: 20px;
+}
+
+/* HIDE CLOSE BUTTON ON DESKTOP */
+.close-sidebar {
+  display: none;
+}
+
+/* MOBILE + TABLET (≤991px) */
+@media (max-width: 991px) {
+
+  /* Sidebar becomes top dropdown */
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    position: fixed;
+    top: 70px;
+    transform: translateY(-120%);
+  }
+
+  .admin-sidebar.open {
+    transform: translateY(0);
+  }
+
+  /* Close button visible */
+  .close-sidebar {
+    display: block;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 26px;
+    margin-left: auto;
+    margin-right: 10px;
+    margin-top: 5px;
+  }
+
+  /* Hamburger visible */
+  .mobile-toggle {
+    display: block;
+    background: none;
+    border: none;
+  }
+
+  /* Hide desktop logout button */
+  .admin-topbar a.btn {
+    display: none !important;
+  }
+
+  /* Content full width */
+  .admin-content {
+    margin-left: 0;
+    margin-top: 150px; /* enough space for sidebar when opened */
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 992px) {
+  .mobile-toggle {
+    display: none;
+  }
+}

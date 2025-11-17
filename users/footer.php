@@ -8,7 +8,7 @@ include_once "../shared/commonlinks.php";
         <div class="row">
             <!-- About Section -->
             <div class="col-lg-5 col-md-12 col-sm-12 mb-1 ">
-                <h5 class="text-uppercase fw-bold fs-3">Jersey E-Mart</h5>
+                <h5 class="text-uppercase text-black fw-bold fs-3">Jersey E-Mart</h5>
                 <p style="font-size: 1rem; color: white;">
                     Jersey E-Mart is your one-stop shop for premium sports jerseys and kits.
                     We bring authentic designs and high-quality products to fans and players alike.
@@ -17,7 +17,7 @@ include_once "../shared/commonlinks.php";
 
             <!-- Quick Links -->
             <div class="col-lg-2 col-md-4 col-sm-2 mb-1">
-                <h5 class=" mb-1 fw-semibold">Links</h5>
+                <h5 class=" mb-1 fw-semibold text-black">Links</h5>
                 <ul class="list-unstyled mb-lg-0">
                     <li><a href="index.php" class="text-white text-decoration-none">Home</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Jerseys</a></li>
@@ -28,7 +28,7 @@ include_once "../shared/commonlinks.php";
 
             <!-- Support -->
             <div class="col-lg-2 col-md-4 col-sm-4 mb-1">
-                <h5 class=" mb-1 fw-semibold">Customer Support</h5>
+                <h5 class=" mb-1 fw-semibold text-black">Customer Support</h5>
                 <ul class="list-unstyled mb-0">
                     <li><a href="FAQ.php" class="text-white text-decoration-none">FAQs</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Shipping Policy</a></li>
@@ -39,7 +39,7 @@ include_once "../shared/commonlinks.php";
 
             <!-- Contact Info -->
             <div class="col-lg-3 col-md-4 col-sm-6 mb-1">
-                <h5 class="mb-1 fw-semibold">Contact Us</h5>
+                <h5 class="mb-1 fw-semibold text-black">Contact Us</h5>
                 <p class="addtext mb-1 text-white"><i class="bi bi-geo-alt-fill me-2"></i>Bharatpur, Nepal</p>
                 <p class="mb-1 text-white">
                     <i class="bi bi-telephone-fill me-2"></i>
