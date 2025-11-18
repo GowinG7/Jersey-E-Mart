@@ -11,16 +11,11 @@ include_once '../shared/commonlinks.php';
     <title>Home Page</title>
 
     <style>
-        /* === BODY === */
         body {
             background-color: #e0f4f2;
-            /* softer mint background */
             color: #2d5d58;
-            /* readable text color */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        /* === CAROUSEL === */
         .carousel {
             padding: 15px;
             overflow: hidden;
@@ -29,9 +24,7 @@ include_once '../shared/commonlinks.php';
 
         .carousel-item {
             height: 420px;
-            /* keep fixed height */
             display: block;
-            /* allow Bootstrap to handle flex alignment */
             background-color: rgba(224, 244, 242, 0.85);
         }
 
@@ -56,10 +49,8 @@ include_once '../shared/commonlinks.php';
             opacity: 1;
         }
 
-        h1,
-        h3 {
+        h1,h3 {
             color: #1c6059;
-            /* darker teal for contrast */
         }
 
         h1 span {
@@ -67,7 +58,6 @@ include_once '../shared/commonlinks.php';
             padding-bottom: 5px;
         }
 
-        /* === CARDS === */
         .card {
             border-radius: 14px;
             background: linear-gradient(145deg, #ffffff, #cdeeea);
@@ -99,8 +89,6 @@ include_once '../shared/commonlinks.php';
         .card-text {
             color: #4f6765;
         }
-
-        /* === BUTTONS === */
         .btn-primary {
             background-color: #379069;
             border: none;
@@ -110,8 +98,6 @@ include_once '../shared/commonlinks.php';
         .btn-primary:hover {
             background-color: #2c6b60;
         }
-
-        /* === LINKS === */
         a {
             color: #1c6059;
             text-decoration: none;
@@ -121,8 +107,6 @@ include_once '../shared/commonlinks.php';
         a:hover {
             color: #47a589;
         }
-
-        /* === SECTION SPACING === */
         .section-title {
             margin-top: 60px;
             margin-bottom: 30px;
@@ -133,8 +117,6 @@ include_once '../shared/commonlinks.php';
             border: 1px solid #cdeeea;
             margin: 40px 0;
         }
-
-        /* === CARD LIST STYLING === */
         .card ul li {
             font-size: 0.9rem;
         }
@@ -208,13 +190,11 @@ include_once '../shared/commonlinks.php';
                 echo '
                 <div class="col-sm-12 col-md-6 col-lg-4 mb-4">
                     <div class="card text-center shadow-sm border-0 h-100">
-                        <img src="' . $jersey['img'] . '" class="card-img-top mx-auto mt-3" alt="' . $jersey['title'] . '" style="height:150px; width:auto; object-fit:contain;">
+                        <img src="' . $jersey['img'] . '" class="card-img-top mx-auto mt-3" alt="' . $jersey['title'] . '" style="height:310px; width:auto; object-fit:contain;">
                         <div class="card-body p-2 d-flex flex-column">
                             <h6 class="card-title fw-semibold mb-1">' . $jersey['title'] . '</h6>
                             <p class="card-text text-muted small mb-2">' . $jersey['desc'] . '</p>
                             <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                                <li><strong>Size:</strong> ' . $jersey['size'] . '</li>
-                                <li><strong>Color:</strong> ' . $jersey['color'] . '</li>
                                 <li><strong>Price:</strong> ' . $jersey['price'] . '</li>
                             </ul>
                             <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
