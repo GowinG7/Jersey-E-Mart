@@ -126,7 +126,7 @@ include_once '../shared/commonlinks.php';
 
 
     <div class="container my-5">
-        <h1 class="text-center mt-5 mb-4 display-5 fw-bold animate__animated animate__fadeInDown">
+        <h1 class="text-center mt-5 mb-4 display-5 fw-bold animate__animated">
             <span>Explore Jersies</span>
         </h1>
 
@@ -178,7 +178,7 @@ include_once '../shared/commonlinks.php';
         <hr>
 
         <!-- Nepal Cricket Jerseys -->
-        <h3 class="text-center section-title animate__animated animate__fadeInDown">Nepal Cricket Jerseys</h3>
+        <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
             <?php
             // Query product rows (limit to 6 for homepage)
@@ -221,7 +221,7 @@ include_once '../shared/commonlinks.php';
         <hr>
 
         <!-- NPL Jerseys -->
-        <h3 class="text-center section-title animate__animated animate__fadeInDown">Nepal Premier League (NPL)</h3>
+        <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
         <div class="row justify-content-start">
             <?php
             // Query product rows (limit to 6 for homepage)
