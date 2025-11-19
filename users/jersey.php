@@ -1,4 +1,5 @@
 <?php
+require_once '../shared/dbconnect.php';
 include_once '../shared/commonlinks.php';
 ?>
 
@@ -12,15 +13,92 @@ include_once '../shared/commonlinks.php';
 
     <style>
         body {
-            background-color: rgb(180, 235, 230);
+            background-color: #e0f4f2;
+            color: #2d5d58;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        h1,
+        h3 {
+            color: #1c6059;
+        }
+
+        h1 span {
+            border-bottom: 3px solid #47a589;
+            padding-bottom: 5px;
+        }
+
+        .card {
+            border-radius: 14px;
+            background: linear-gradient(145deg, #ffffff, #cdeeea);
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(48, 107, 101, 0.25);
+        }
+
+        .card img {
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .card:hover img {
+            transform: scale(1.03);
+        }
+
+        .card-title {
+            color: #1c6059;
+            font-weight: 700;
+        }
+
+        .card-text {
+            color: #4f6765;
+        }
+
+        .btn-primary {
+            background-color: #379069;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2c6b60;
+        }
+
+        a {
+            color: #1c6059;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #47a589;
+        }
+
+        .section-title {
+            margin-top: 60px;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        hr {
+            border: 1px solid #cdeeea;
+            margin: 40px 0;
+        }
+
+        .card ul li {
+            font-size: 0.9rem;
         }
     </style>
 </head>
 
 <body>
     <?php include_once 'header.php'; ?>
-
-    <h1 class="text-center mt-4">Explore Jersies </h1>
 
     <!-- for search bar -->
     <div class="container mt-3">
@@ -48,288 +126,144 @@ include_once '../shared/commonlinks.php';
 
 
     <div class="container my-5">
+        <h1 class="text-center mt-5 mb-4 display-5 fw-bold animate__animated animate__fadeInDown">
+            <span>Explore Jersies</span>
+        </h1>
 
-        <!--  Nepal Football Section -->
-        <h3 class="text-center mb-4 fw-bold text-black">Nepal Football Jerseys</h3>
         <div class="row justify-content-start">
+            <?php
+            // Query product rows (limit to 6 for homepage)
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price 
+                         FROM products 
+                         WHERE category = 'football' 
+                         ORDER BY id DESC LIMIT 6");
 
-            <!-- Nepal Football Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-football">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/football/home.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Football Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Home Jersey 2025 Edition</h6>
-                        <p class="card-text text-muted small mb-2">
-                            Show your pride with the official Nepal national team jersey—crafted with breathable,
-                            moisture-wicking fabric for peak performance and comfort.
-                        </p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> M</li>
-                            <li><strong>Color:</strong> Red</li>
-                            <li><strong>Price:</strong> $35</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
+            if ($res && $res->num_rows) {
+                while ($r = $res->fetch_assoc()) {
 
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-football-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/football/away.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Football Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Football Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and matching shorts for full
-                            match-day style.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> M</li>
-                            <li><strong>Color:</strong> Red & Blue</li>
-                            <li><strong>Price:</strong> $55</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
+                    $id = $r['id'];
+                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
+                    $title = htmlspecialchars($r['title']);
+                    $desc = htmlspecialchars($r['description'] ?? '');
+                    $price = htmlspecialchars($r['price'] ?? '');
 
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-football-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/football/third.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Football Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Football Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and matching shorts for full
-                            match-day style.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> M</li>
-                            <li><strong>Color:</strong> Red & Blue</li>
-                            <li><strong>Price:</strong> $55</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
+                    echo "
+            <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+              <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='card text-center shadow-sm border-0 h-100'>
+                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
+                       alt='{$title}' 
+                       style='height:310px; width:auto; object-fit:contain;'>
+
+                  <div class='card-body p-2 d-flex flex-column'>
+                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
+                      <li><strong>Price:</strong> {$price}</li>
+                    </ul>
+                  </div>
                 </div>
+              </a>
             </div>
+            ";
+                }
+            } else {
+                echo '<p class="text-muted">No football jerseys available.</p>';
+            }
+            ?>
         </div>
 
-        <!--  Nepal Cricket Section -->
-        <h3 class="text-center mt-5 mb-4 fw-bold text-black">Nepal Cricket Jerseys</h3>
+
+        <hr>
+
+        <!-- Nepal Cricket Jerseys -->
+        <h3 class="text-center section-title animate__animated animate__fadeInDown">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
+            <?php
+            // Query product rows (limit to 6 for homepage)
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price FROM products WHERE category = 'Cricket' ORDER BY id DESC LIMIT 6");
+            if ($res && $res->num_rows) {
+                while ($r = $res->fetch_assoc()) {
+                    //yeha $id assign garena baney view jersey ma previous jersey dekhinxa
+                    $id = $r['id'];
+                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
+                    $title = htmlspecialchars($r['title']);
+                    $desc = htmlspecialchars($r['description'] ?? '');
+                    $price = htmlspecialchars($r['price'] ?? '');
+                    echo "
+                <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                 <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='card text-center shadow-sm border-0 h-100'>
+                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
+                       alt='{$title}' 
+                       style='height:310px; width:auto; object-fit:contain;'>
 
-            <!-- Nepal Cricket Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-cricket">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/cricket/2014.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Cricket Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Cricket Jersey</h6>
-                        <p class="card-text text-muted small mb-2">Lightweight and stylish jersey for cricket fans.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> L</li>
-                            <li><strong>Color:</strong> Blue</li>
-                            <li><strong>Price:</strong> $38</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
+                  <div class='card-body p-2 d-flex flex-column'>
+                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
+                      <li><strong>Price:</strong> {$price}</li>
+                    </ul>
+                  </div>
                 </div>
+              </a>
             </div>
-
-            <!-- Nepal Cricket Full Set -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-cricket-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/cricket/2024.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Cricket Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Cricket Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Complete cricket kit with jersey and pants.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> L</li>
-                            <li><strong>Color:</strong> Blue & White</li>
-                            <li><strong>Price:</strong> $60</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-             <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="national-cricket-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/cricket/2024.jpg" class="card-img-top mx-auto mt-3" alt="Nepal Cricket Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">Nepal Cricket Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Complete cricket kit with jersey and pants.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> L</li>
-                            <li><strong>Color:</strong> Blue & White</li>
-                            <li><strong>Price:</strong> $60</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
+                    ";
+                }
+            } else {
+                echo '<p class="text-muted">No Cricket jerseys available.</p>';
+            }
+            ?>
         </div>
 
-        <!-- NPL Section -->
-        <h3 class="text-center mt-5 mb-4 fw-bold text-black">Nepal Premier League (NPL)</h3>
+        <hr>
+
+        <!-- NPL Jerseys -->
+        <h3 class="text-center section-title animate__animated animate__fadeInDown">Nepal Premier League (NPL)</h3>
         <div class="row justify-content-start">
+            <?php
+            // Query product rows (limit to 6 for homepage)
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price FROM products WHERE category = 'NPL cricket' ORDER BY id DESC LIMIT 6");
+            if ($res && $res->num_rows) {
+                while ($r = $res->fetch_assoc()) {
+                    //yeha assign garena baney view_jersey ma previous jersey id select hunca
+                    $id = $r['id'];
+                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
+                    $title = htmlspecialchars($r['title']);
+                    $desc = htmlspecialchars($r['description'] ?? '');
+                    $price = htmlspecialchars($r['price'] ?? '');
+                    echo "
+                    <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                 <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='card text-center shadow-sm border-0 h-100'>
+                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
+                       alt='{$title}' 
+                       style='height:310px; width:auto; object-fit:contain;'>
 
-            <!-- NPL Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/biratnagar.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Club Jersey</h6>
-                        <p class="card-text text-muted small mb-2">Stylish club jersey for Nepal Premier League fans.
-                        </p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black</li>
-                            <li><strong>Price:</strong> $32</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
+                  <div class='card-body p-2 d-flex flex-column'>
+                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
+                      <li><strong>Price:</strong> {$price}</li>
+                    </ul>
+                  </div>
                 </div>
+              </a>
             </div>
-
-            <!-- NPL Full Set -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/chitwan.png" class="card-img-top mx-auto mt-3" alt="NPL Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and shorts for full club support.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black & Red</li>
-                            <li><strong>Price:</strong> $50</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-               <!-- NPL Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/janakpur.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Club Jersey</h6>
-                        <p class="card-text text-muted small mb-2">Stylish club jersey for Nepal Premier League fans.
-                        </p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black</li>
-                            <li><strong>Price:</strong> $32</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NPL Full Set -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/karnali.png" class="card-img-top mx-auto mt-3" alt="NPL Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and shorts for full club support.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black & Red</li>
-                            <li><strong>Price:</strong> $50</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-               <!-- NPL Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/kathmandu.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Club Jersey</h6>
-                        <p class="card-text text-muted small mb-2">Stylish club jersey for Nepal Premier League fans.
-                        </p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black</li>
-                            <li><strong>Price:</strong> $32</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NPL Full Set -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/lumbini.png" class="card-img-top mx-auto mt-3" alt="NPL Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and shorts for full club support.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black & Red</li>
-                            <li><strong>Price:</strong> $50</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-               <!-- NPL Jersey -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/pokhara.png" class="card-img-top mx-auto mt-3" alt="NPL Jersey"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Club Jersey</h6>
-                        <p class="card-text text-muted small mb-2">Stylish club jersey for Nepal Premier League fans.
-                        </p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black</li>
-                            <li><strong>Price:</strong> $32</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NPL Full Set -->
-            <div class="col-sm-12 col-md-6 col-lg-4 mb-4" data-type="npl-set">
-                <div class="card text-center shadow-sm border-0 h-100">
-                    <img src="images/npl/sudurpaschim.png" class="card-img-top mx-auto mt-3" alt="NPL Full Set"
-                        style="height:150px; width:auto; object-fit:contain;">
-                    <div class="card-body p-2 d-flex flex-column">
-                        <h6 class="card-title fw-semibold mb-1">NPL Full Set</h6>
-                        <p class="card-text text-muted small mb-2">Includes jersey and shorts for full club support.</p>
-                        <ul class="list-unstyled small mb-2 text-start mx-auto" style="max-width: 200px;">
-                            <li><strong>Size:</strong> S</li>
-                            <li><strong>Color:</strong> Black & Red</li>
-                            <li><strong>Price:</strong> $50</li>
-                        </ul>
-                        <button class="btn btn-sm btn-primary mt-auto">Add to cart</button>
-                    </div>
-                </div>
-            </div>
-
-
+                    ";
+                }
+            } else {
+                echo '<p class="text-muted">No NPL jerseys available.</p>';
+            }
+            ?>
         </div>
     </div>
 
-
     <?php include_once 'footer.php'; ?>
 
-    <script src="js/jersey.js"></script>
 </body>
 
 </html>
