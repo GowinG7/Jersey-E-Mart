@@ -143,162 +143,201 @@ if (isset($_GET['del'])) {
 
 <body>
 
-    <div class="container p-3" style="margin-top:70px;"> <!-- space for sticky header -->
+    <?php
+    include_once "header.php";
+    ?>
+    <div class="container p-3" style="margin-top:70px;margin-left:230px;"> <!-- space for sticky header -->
+        <div class="row " style="margin-right:40px;">
+            <div class="d-flex justify-content-between mb-3">
+                <h3 style="font-weight:700;">Jersey Inventory</h3>
+                <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Jersey</button>
+            </div>
 
-        <div class="d-flex justify-content-between mb-3">
-            <h3 style="font-weight:700;">Jersey Inventory</h3>
-            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Jersey</button>
-        </div>
+            <!-- search box -->
+            <div class="mb-3">
+                <input type="text" id="searchBox" class="form-control"
+                    placeholder="Search Jerseys by Name or Category...">
+            </div>
 
-        <!-- PRODUCT TABLE -->
-        <table class="table table-bordered table-striped">
-            <thead class="table-header">
-                <tr>
-                    <th>Image</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Discount</th>
-                    <th>Shipping</th>
-                    <th>Final</th>
-                    <th>Sizes</th>
-                    <th width="200">Action</th>
-                </tr>
-            </thead>
 
-            <tbody>
-                <?php
-                $r = $conn->query("SELECT * FROM products ORDER BY id DESC");
-                while ($p = $r->fetch_assoc()) {
-                    $pid = $p['id'];
-                    $final = $p['price'] - ($p['price'] * $p['discount'] / 100) + $p['shipping'];
-                    ?>
+            <!-- PRODUCT TABLE -->
+            <table class="table table-bordered table-striped">
+                <thead class="table-header table-dark">
                     <tr>
-                        <td><img src="../shared/products/<?= $p['image'] ?>" width="55"></td>
-                        <td><?= $p['j_name'] ?></td>
-                        <td><?= $p['category'] ?></td>
-                        <td><?= $p['price'] ?></td>
-                        <td><?= $p['discount'] ?>%</td>
-                        <td><?= $p['shipping'] ?></td>
-                        <td class="fw-bold text-success"><?= $final ?></td>
-
-                        <td id="sizeCell<?= $pid ?>"> <!-- Display Sizes -->
-                            <?php
-                            $sz = $conn->query("SELECT * FROM product_sizes WHERE product_id=$pid");
-                            if ($sz->num_rows) {
-                                while ($x = $sz->fetch_assoc())
-                                    echo "<span class='badge bg-dark mx-1'> $x[size] : $x[stock] </span>";
-                            } else
-                                echo "<span class='text-muted'>None</span>";
-                            ?>
-                        </td>
-
-                        <td>
-                            <!-- BUTTONS: Size Modal (Customize), Edit Modal, Delete -->
-                            <button class="btn btn-primary btn-sm"
-                                onclick="openSizeModal(<?= $pid ?>,'<?= $p['j_name'] ?>')">Manage</button>
-                            <button class="btn btn-warning btn-sm" onclick="openEditModal(<?= $pid ?>)">Edit</button>
-                            <a href="?del=<?= $pid ?>" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Remove Jersey?')">Delete</a>
-                        </td>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Country</th>
+                        <th>Price</th>
+                        <th>Discount</th>
+                        <th>Shipping</th>
+                        <th>Final</th>
+                        <th>Sizes</th>
+                        <th width="200">Action</th>
                     </tr>
-                <?php } ?>
-            </tbody>
-        </table>
-    </div>
+                </thead>
 
-    <!-- ================= ADD PRODUCT MODAL ================= -->
-    <div class="modal fade" id="addModal">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content p-3">
-                <h5>Add Jersey</h5>
-                <hr>
-                <form method="POST" enctype="multipart/form-data" class="row g-2">
-                    <!-- Product fields -->
-                    <div class="col-md-6"><input class="form-control" name="j_name" required placeholder="Jersey Name">
-                    </div>
-                    <div class="col-md-3"><input class="form-control" name="category" placeholder="Category"></div>
-                    <div class="col-md-3"><input class="form-control" name="country" placeholder="Country"></div>
-                    <div class="col-md-3"><input class="form-control" name="type" placeholder="Type"></div>
-                    <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
-                            placeholder="Price"></div>
-                    <div class="col-md-3"><input class="form-control" name="discount" type="number"
-                            placeholder="Discount %"></div>
-                    <div class="col-md-3"><input class="form-control" name="shipping" type="number"
-                            placeholder="Shipping"></div>
-                    <div class="col-12"><textarea class="form-control" name="description"
-                            placeholder="Description"></textarea></div>
-                    <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
-                    <div class="text-end mt-3">
-                        <button type="submit" name="add_product" class="btn btn-success">Save</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-                </form>
-            </div>
+                <tbody>
+                    <?php
+                    $r = $conn->query("SELECT * FROM products ORDER BY id DESC");
+                    while ($p = $r->fetch_assoc()) {
+                        $pid = $p['id'];
+                        $final = $p['price'] - ($p['price'] * $p['discount'] / 100) + $p['shipping'];
+                        ?>
+                        <tr>
+                            <td><img src="../shared/products/<?= $p['image'] ?>" width="55"></td>
+                            <td><?= $p['j_name'] ?></td>
+                            <td><?= $p['category'] ?></td>
+                            <td><?= $p['country'] ?></td>
+                            <td><?= $p['price'] ?></td>
+                            <td><?= $p['discount'] ?>%</td>
+                            <td><?= $p['shipping'] ?></td>
+                            <td class="fw-bold text-success"><?= $final ?></td>
+
+                            <td id="sizeCell<?= $pid ?>"> <!-- Display Sizes -->
+                                <?php
+                                $sz = $conn->query("SELECT * FROM product_sizes WHERE product_id=$pid");
+                                if ($sz->num_rows) {
+                                    while ($x = $sz->fetch_assoc())
+                                        echo "<span class='badge bg-dark mx-1'> $x[size] : $x[stock] </span>";
+                                } else
+                                    echo "<span class='text-muted'>None</span>";
+                                ?>
+                            </td>
+
+                            <td>
+                                <!-- BUTTONS: Size Modal (Customize), Edit Modal, Delete -->
+                                <button class="btn btn-primary btn-sm"
+                                    onclick="openSizeModal(<?= $pid ?>,'<?= $p['j_name'] ?>')">Manage</button>
+                                <button class="btn btn-warning btn-sm" onclick="openEditModal(<?= $pid ?>)">Edit</button>
+                                <a href="?del=<?= $pid ?>" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Remove Jersey?')">Delete</a>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
         </div>
-    </div>
 
-    <!-- ================= EDIT PRODUCT MODAL ================= -->
-    <div class="modal fade" id="editModal">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content p-3">
-                <h5>Edit Jersey</h5>
-                <hr>
-                <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm">
-                    <input type="hidden" name="edit_id" id="edit_id">
-                    <!-- Edit fields -->
-                    <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
-                            placeholder="Jersey Name"></div>
-                    <div class="col-md-3"><input class="form-control" name="category" id="edit_category"
-                            placeholder="Category"></div>
-                    <div class="col-md-3"><input class="form-control" name="country" id="edit_country"
-                            placeholder="Country"></div>
-                    <div class="col-md-3"><input class="form-control" name="type" id="edit_type" placeholder="Type">
-                    </div>
-                    <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
-                            id="edit_price" placeholder="Price"></div>
-                    <div class="col-md-3"><input class="form-control" name="discount" type="number" id="edit_discount"
-                            placeholder="Discount %"></div>
-                    <div class="col-md-3"><input class="form-control" name="shipping" type="number" id="edit_shipping"
-                            placeholder="Shipping"></div>
-                    <div class="col-12"><textarea class="form-control" name="description" id="edit_description"
-                            placeholder="Description"></textarea></div>
-                    <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
-                    <div class="text-end mt-3">
-                        <button name="edit_product" class="btn btn-success">Update</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= SIZE MODAL (CUSTOMIZE SIZES) ================= -->
-    <div class="modal fade" id="sizeModal">
-        <div class="modal-dialog">
-            <div class="modal-content p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 id="sizeTitle">Customize Sizes</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <!-- ================= ADD PRODUCT MODAL ================= -->
+        <div class="modal fade" id="addModal">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content p-3">
+                    <h5>Add Jersey</h5>
+                    <hr>
+                    <form method="POST" enctype="multipart/form-data" class="row g-2">
+                        <!-- Product fields -->
+                        <div class="col-md-6"><input class="form-control" name="j_name" required
+                                placeholder="Jersey Name">
+                        </div>
+                        <div class="col-md-3"><input class="form-control" name="category" placeholder="Category">
+                        </div>
+                        <div class="col-md-3"><input class="form-control" name="country" placeholder="Country">
+                        </div>
+                        <div class="col-md-3"><input class="form-control" name="type" placeholder="Type"></div>
+                        <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
+                                placeholder="Price"></div>
+                        <div class="col-md-3"><input class="form-control" name="discount" type="number"
+                                placeholder="Discount %"></div>
+                        <div class="col-md-3"><input class="form-control" name="shipping" type="number"
+                                placeholder="Shipping"></div>
+                        <div class="col-12"><textarea class="form-control" name="description"
+                                placeholder="Description"></textarea></div>
+                        <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+                        <div class="text-end mt-3">
+                            <button type="submit" name="add_product" class="btn btn-success">Save</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
                 </div>
-                <select id="sizeSelect" class="form-select mb-2">
-                    <option>Small</option>
-                    <option>Medium</option>
-                    <option>Large</option>
-                    <option>XL</option>
-                    <option>XXL</option>
-                </select>
-                <input type="number" id="stockInput" placeholder="Stock" class="form-control mb-2">
-                <button class="btn btn-success w-100" onclick="saveSize()">Save</button>
-                <hr>
-                <div id="sizesList"></div>
+            </div>
+        </div>
+
+        <!-- ================= EDIT PRODUCT MODAL ================= -->
+        <div class="modal fade" id="editModal">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content p-3">
+                    <h5>Edit Jersey</h5>
+                    <hr>
+                    <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm">
+                        <input type="hidden" name="edit_id" id="edit_id">
+                        <!-- Edit fields -->
+                        <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
+                                placeholder="Jersey Name"></div>
+                        <div class="col-md-3"><input class="form-control" name="category" id="edit_category"
+                                placeholder="Category"></div>
+                        <div class="col-md-3"><input class="form-control" name="country" id="edit_country"
+                                placeholder="Country"></div>
+                        <div class="col-md-3"><input class="form-control" name="type" id="edit_type" placeholder="Type">
+                        </div>
+                        <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
+                                id="edit_price" placeholder="Price"></div>
+                        <div class="col-md-3"><input class="form-control" name="discount" type="number"
+                                id="edit_discount" placeholder="Discount %"></div>
+                        <div class="col-md-3"><input class="form-control" name="shipping" type="number"
+                                id="edit_shipping" placeholder="Shipping"></div>
+                        <div class="col-12"><textarea class="form-control" name="description" id="edit_description"
+                                placeholder="Description"></textarea></div>
+                        <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+                        <div class="text-end mt-3">
+                            <button name="edit_product" class="btn btn-success">Update</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SIZE MODAL (CUSTOMIZE SIZES) ================= -->
+        <div class="modal fade" id="sizeModal">
+            <div class="modal-dialog">
+                <div class="modal-content p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 id="sizeTitle">Customize Sizes</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <select id="sizeSelect" class="form-select mb-2">
+                        <option>Small</option>
+                        <option>Medium</option>
+                        <option>Large</option>
+                        <option>XL</option>
+                        <option>XXL</option>
+                    </select>
+                    <input type="number" id="stockInput" placeholder="Stock" class="form-control mb-2">
+                    <button class="btn btn-success w-100" onclick="saveSize()">Save</button>
+                    <hr>
+                    <div id="sizesList"></div>
+                </div>
             </div>
         </div>
     </div>
 
 
     <script>
+        // For search functionality
+        const searchBox = document.getElementById('searchBox');
+        const table = document.querySelector('table tbody');
+
+        searchBox.addEventListener('keyup', function () {
+            const filter = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const name = row.cells[1].textContent.toLowerCase(); // Name column
+                const category = row.cells[2].textContent.toLowerCase(); // Category column
+                const country = row.cells[3].textContent.toLowerCase(); // Country column
+
+                if (name.includes(filter) || category.includes(filter) || country.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+
+
         let PROD = 0;
 
         /* ================= SIZE MODAL FUNCTIONS ================= */
