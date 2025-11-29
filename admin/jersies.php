@@ -1,462 +1,312 @@
 <?php
-require('../shared/commonlinks.php');
-require('../shared/dbconnect.php');
+require_once "../shared/dbconnect.php";
 
-/*
-   ADD JERSEY
- */
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_jersey'])) {
+/* ============================================================
+   AJAX HANDLERS — must be before any HTML output
+   ============================================================ */
 
-    $j_name = $_POST['j_name'];
-    $category = $_POST['category'];
-    $country = $_POST['country'];
-    $type = $_POST['type'] ?: null;
-    $sizes = $_POST['sizes'] ?: null;
-    $quantity = $_POST['quantity'] ?: 0;
-    $price = $_POST['price'];
-    $discount = $_POST['discount'] ?: 0;
+/* ---------------- FETCH PRODUCT DATA FOR EDIT ---------------- */
+if(isset($_POST['fetch_product'])){
+    $id = (int)$_POST['id'];
+    $res = $conn->query("SELECT * FROM products WHERE id=$id");
+    header('Content-Type: application/json'); // important for JSON
+    echo json_encode($res->fetch_assoc());
+    exit;
+}
+
+/* ---------------- FETCH SIZES FOR CUSTOMIZATION ---------------- */
+if(isset($_POST['fetch_sizes'])){
+    $pid = (int)$_POST['pid'];
+    $q = $conn->query("SELECT * FROM product_sizes WHERE product_id=$pid");
+    if($q->num_rows==0){
+        echo "<span class='text-muted'>No Sizes Added</span>"; 
+        exit;
+    }
+    while($s=$q->fetch_assoc()){
+        echo "
+        <div class='d-flex align-items-center mb-1'>
+            <b style='width:45px;'>$s[size]</b>
+            <input type='number' class='form-control form-control-sm mx-2'
+                value='$s[stock]' onchange='updateStock($s[id],this.value)' style='width:70px'>
+            <button onclick='deleteSize($s[id])' class='btn btn-danger btn-sm py-0'>x</button>
+        </div>";
+    }
+    exit;
+}
+
+/* ---------------- ADD / UPDATE SIZE ---------------- */
+if(isset($_POST['add_size'])){
+    $pid = (int)$_POST['product_id'];
+    $size = $_POST['size']; 
     $stock = $_POST['stock'];
-    $shipping = $_POST['shipping'] ?: 0;
-    $description = $_POST['description'] ?: '';
 
-    // Image upload
-    $image = null;
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $img_name = time() . '_' . basename($_FILES['image']['name']);
-        $target = "../shared/products/" . $img_name;
-        move_uploaded_file($_FILES['image']['tmp_name'], $target);
-        $image = $img_name;
+    if($size=='') exit; // prevent empty size
+
+    $exist = $conn->query("SELECT id FROM product_sizes WHERE product_id=$pid AND size='$size'");
+    if($exist->num_rows){
+        $conn->query("UPDATE product_sizes SET stock='$stock' WHERE product_id=$pid AND size='$size'");
+        echo "updated"; exit;
+    } else {
+        $conn->query("INSERT INTO product_sizes(product_id,size,stock) VALUES($pid,'$size','$stock')");
+        echo "inserted"; exit;
+    }
+}
+
+/* ---------------- DELETE SIZE ---------------- */
+if(isset($_POST['del_size'])){
+    $conn->query("DELETE FROM product_sizes WHERE id=".(int)$_POST['del_size']);
+    echo "deleted"; exit;
+}
+
+/* ============================================================
+   PRODUCT HANDLERS — add, edit, delete
+   ============================================================ */
+
+/* ---------------- ADD PRODUCT ---------------- */
+if(isset($_POST['add_product'])){
+    $name=$_POST['j_name']; $cat=$_POST['category']; $country=$_POST['country']; 
+    $type=$_POST['type']; $price=$_POST['price']; $discount=$_POST['discount'];
+    $shipping=$_POST['shipping']; $desc=$_POST['description'];
+
+    $image="";
+    if(!empty($_FILES['image']['name'])){
+        $image=time()."_".basename($_FILES['image']['name']);
+        move_uploaded_file($_FILES['image']['tmp_name'],"../shared/products/$image");
     }
 
-    $stmt = $conn->prepare("INSERT INTO products (j_name, category, country, type, sizes, quantity, price, discount, stock, shipping, description, image)
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)");
-    $stmt->bind_param("ssssiiisssss", $j_name, $category, $country, $type, $sizes, $quantity, $price, $discount, $stock, $shipping, $description, $image);
-    $stmt->execute();
-
+    $q=$conn->prepare("INSERT INTO products(j_name,category,country,type,price,discount,shipping,description,image)
+    VALUES(?,?,?,?,?,?,?,?,?)");
+    $q->bind_param("ssssddsss",$name,$cat,$country,$type,$price,$discount,$shipping,$desc,$image);
+    $q->execute(); 
     header("Location: jersies.php");
     exit;
 }
 
-/*
-   UPDATE JERSEY
-*/
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_id'])) {
+/* ---------------- EDIT PRODUCT ---------------- */
+if(isset($_POST['edit_product'])){
+    $id=$_POST['edit_id'];
+    $name=$_POST['j_name']; $cat=$_POST['category']; $country=$_POST['country']; 
+    $type=$_POST['type']; $price=$_POST['price']; $discount=$_POST['discount'];
+    $shipping=$_POST['shipping']; $desc=$_POST['description'];
 
-    $id = $_POST['edit_id'];
-    $j_name = $_POST['j_name'];
-    $category = $_POST['category'];
-    $country = $_POST['country'];
-    $type = $_POST['type'] ?: null;
-    $sizes = $_POST['sizes'] ?: null;
-    $quantity = $_POST['quantity'] ?: 0;
-    $price = $_POST['price'];
-    $discount = $_POST['discount'];
-    $stock = $_POST['stock'];
-    $shipping = $_POST['shipping'];
-    $description = $_POST['description'];
-
-    // NEW IMAGE ?
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $img_name = time() . '_' . basename($_FILES['image']['name']);
-        $target = "../shared/products/" . $img_name;
-        move_uploaded_file($_FILES['image']['tmp_name'], $target);
-
-        // delete old
-        $old = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc()['image'];
-        if ($old && file_exists("../shared/products/" . $old)) {
-            unlink("../shared/products/" . $old);
-        }
-
-        $conn->query("UPDATE products SET image='$img_name' WHERE id=$id");
+    $imageSQL="";
+    if(!empty($_FILES['image']['name'])){
+        $image=time()."_".basename($_FILES['image']['name']);
+        move_uploaded_file($_FILES['image']['tmp_name'],"../shared/products/$image");
+        $imageSQL=", image='$image'";
     }
 
-    $stmt = $conn->prepare("UPDATE products SET 
-        j_name=?, category=?, country=?, type=?, sizes=?, quantity=?, price=?, discount=?, stock=?, shipping=?, description=?
-        WHERE id=?");
-    $stmt->bind_param(
-        "ssssiiissssi",
-        $j_name,
-        $category,
-        $country,
-        $type,
-        $sizes,
-        $quantity,
-        $price,
-        $discount,
-        $stock,
-        $shipping,
-        $description,
-        $id
-    );
-    $stmt->execute();
-
-    header("Location: jersies.php");
+    $conn->query("UPDATE products SET j_name='$name', category='$cat', country='$country', type='$type', price='$price',
+    discount='$discount', shipping='$shipping', description='$desc' $imageSQL WHERE id=$id");
+    header("Location: jersies.php"); 
     exit;
 }
 
-/* 
-   DELETE JERSEY
- */
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-
-    // delete image
-    $img = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc()['image'];
-    if ($img && file_exists("../shared/products/" . $img)) {
-        unlink("../shared/products/" . $img);
-    }
-
-    $conn->query("DELETE FROM products WHERE id=$id");
-
-    header("Location: jersies.php");
+/* ---------------- DELETE PRODUCT ---------------- */
+if(isset($_GET['del'])){
+    $conn->query("DELETE FROM products WHERE id=".$_GET['del']);
+    header("Location: jersies.php"); 
     exit;
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-    <title>Admin Panel - Jerseys</title>
-    <link rel="stylesheet" href="css/header.css">
+<title>Jersey Inventory</title>
+<?php include_once '../shared/commonlinks.php'; ?>
+<link rel="stylesheet" href="css/header.css">
+<style>
+body{background:#e9fffa;font-family:calibri;}
+.table-header{background:#00796b;color:#fff;font-weight:bold;}
+</style>
 </head>
 
-<body style="background-color:lightgray">
-    <?php require('header.php'); ?>
+<body>
 
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-10 ms-auto p-4">
+<div class="container p-3" style="margin-top:70px;"> <!-- space for sticky header -->
 
-                <h3 class="mb-4">Jerseys</h3>
+<div class="d-flex justify-content-between mb-3">
+<h3 style="font-weight:700;">Jersey Inventory</h3>
+<button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Jersey</button>
+</div>
 
-                <div class="d-flex justify-content-end mb-3">
+<!-- PRODUCT TABLE -->
+<table class="table table-bordered table-striped">
+<thead class="table-header"><tr>
+<th>Image</th><th>Name</th><th>Category</th>
+<th>Price</th><th>Discount</th><th>Shipping</th><th>Final</th>
+<th>Sizes</th><th width="200">Action</th>
+</tr></thead>
 
-                    <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-                        Add Jersey
-                    </button>
-                </div>
-                <!-- Search box -->
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="searchBox" placeholder="Search jersies details...">
-                </div>
+<tbody>
+<?php
+$r=$conn->query("SELECT * FROM products ORDER BY id DESC");
+while($p=$r->fetch_assoc()){
+$pid=$p['id']; 
+$final=$p['price'] - ($p['price']*$p['discount']/100) + $p['shipping'];
+?>
+<tr>
+<td><img src="../shared/products/<?=$p['image']?>" width="55"></td>
+<td><?=$p['j_name']?></td>
+<td><?=$p['category']?></td>
+<td><?=$p['price']?></td>
+<td><?=$p['discount']?>%</td>
+<td><?=$p['shipping']?></td>
+<td class="fw-bold text-success"><?=$final?></td>
 
+<td id="sizeCell<?=$pid?>"> <!-- Display Sizes -->
+<?php
+$sz=$conn->query("SELECT * FROM product_sizes WHERE product_id=$pid");
+if($sz->num_rows){
+    while($x=$sz->fetch_assoc()) echo "<span class='badge bg-dark mx-1'> $x[size] : $x[stock] </span>";
+} else echo "<span class='text-muted'>None</span>";
+?>
+</td>
 
-                <div class="table-responsive border" style="height:450px;overflow:auto;">
-                    <table class="table table-hover" id="jersiesTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Product ID</th>
-                                <th>Category</th>
-                                <th>Country</th>
-                                <th>Type</th>
-                                <th>Size</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Discount</th>
-                                <th>Stock</th>
-                                <th>Shipping</th>
-                                <th>Image</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+<td>
+<!-- BUTTONS: Size Modal (Customize), Edit Modal, Delete -->
+<button class="btn btn-primary btn-sm" onclick="openSizeModal(<?=$pid?>,'<?=$p['j_name']?>')">Manage</button>
+<button class="btn btn-warning btn-sm" onclick="openEditModal(<?=$pid?>)">Edit</button>
+<a href="?del=<?=$pid?>" class="btn btn-danger btn-sm"
+ onclick="return confirm('Remove Jersey?')">Delete</a>
+</td>
+</tr>
+<?php } ?>
+</tbody>
+</table>
+</div>
 
-                        <?php
-                            $res = $conn->query("SELECT * FROM products ORDER BY id DESC");
-                            $i = 1;
-
-                            while ($j = $res->fetch_assoc()) {
-
-                              $qty = isset($j['quantity']) ? (int)$j['quantity'] : 0;
-                              $stockText = ($j['stock'] === "In Stock") ? "In Stock: {$qty}" : "Out of Stock";
-
-                              echo "<tr>";
-                              echo "<td>{$i}</td>";
-                              echo "<td>{$j['j_name']}</td>";
-                              echo "<td>{$j['id']}</td>";
-                              echo "<td>{$j['category']}</td>";
-                              echo "<td>{$j['country']}</td>";
-                              echo "<td>{$j['type']}</td>";
-                              echo "<td>{$j['sizes']}</td>";
-                              echo "<td>{$qty}</td>";
-                              echo "<td>{$j['price']}</td>";
-                              echo "<td>{$j['discount']}</td>";
-                              echo "<td>{$stockText}</td>";
-                              echo "<td>{$j['shipping']}</td>";
-                              echo "<td><img src='../shared/products/{$j['image']}' width='50'></td>";
-                              echo "<td>
-                                      <button class='btn btn-primary btn-sm edit-btn mb-1' data-id='{$j['id']}'>Edit</button>
-                                      <button class='btn btn-danger btn-sm delete-btn mb-1' data-id='{$j['id']}'>Delete</button>
-                                    </td>";
-                              echo "</tr>";
-
-                              $i++;
-                            }
-                        ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Add Jersey Modal -->
-                <div class="modal fade" id="addModal">
-                    <div class="modal-dialog modal-lg">
-                        <form method="POST" enctype="multipart/form-data">
-                            <input type="hidden" name="add_jersey" value="1">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5>Add Jersey</h5>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row">
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Name</label>
-                                            <input type="text" name="j_name" class="form-control" required>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Category</label>
-                                            <input type="text" name="category" class="form-control" required>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Country</label>
-                                            <input type="text" name="country" class="form-control" required>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Type</label>
-                                            <select name="type" class="form-select">
-                                                <option value="">None</option>
-                                                <option>Home</option>
-                                                <option>Away</option>
-                                                <option>Third</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Size</label>
-                                            <select name="sizes" class="form-select">
-                                                <option value="">Select</option>
-                                                <option>S</option>
-                                                <option>M</option>
-                                                <option>L</option>
-                                                <option>XL</option>
-                                                <option>XXL</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Quantity</label>
-                                            <input type="number" name="quantity" class="form-control" value="0"
-                                                required>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Price</label>
-                                            <input type="number" name="price" class="form-control" required>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Discount</label>
-                                            <input type="number" name="discount" class="form-control" value="0">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Stock</label>
-                                            <select name="stock" class="form-select">
-                                                <option>In Stock</option>
-                                                <option>Out of Stock</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Shipping</label>
-                                            <input type="number" name="shipping" class="form-control" value="0">
-                                        </div>
-
-                                        <div class="col-12 mb-3">
-                                            <label class="fw-bold">Image</label>
-                                            <input type="file" name="image" class="form-control" required>
-                                        </div>
-
-                                        <div class="col-12 mb-3">
-                                            <label class="fw-bold">Description</label>
-                                            <textarea name="description" class="form-control"></textarea>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button class="btn btn-primary">Add</button>
-                                </div>
-
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Edit Modal -->
-                <div class="modal fade" id="editModal">
-                    <div class="modal-dialog modal-lg">
-                        <form method="POST" enctype="multipart/form-data">
-                            <input type="hidden" name="edit_id" id="edit_id">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5>Edit Jersey</h5>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row">
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Name</label>
-                                            <input type="text" name="j_name" id="edit_j_name" class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Category</label>
-                                            <input type="text" name="category" id="edit_category" class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Country</label>
-                                            <input type="text" name="country" id="edit_country" class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Type</label>
-                                            <select name="type" id="edit_type" class="form-select">
-                                                <option value="">None</option>
-                                                <option>Home</option>
-                                                <option>Away</option>
-                                                <option>Third</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Size</label>
-                                            <select name="sizes" id="edit_sizes" class="form-select">
-                                                <option value="">Select</option>
-                                                <option>S</option>
-                                                <option>M</option>
-                                                <option>L</option>
-                                                <option>XL</option>
-                                                <option>XXL</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Quantity</label>
-                                            <input type="number" name="quantity" id="edit_quantity"
-                                                class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Price</label>
-                                            <input type="number" name="price" id="edit_price" class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Discount</label>
-                                            <input type="number" name="discount" id="edit_discount"
-                                                class="form-control">
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Stock</label>
-                                            <select name="stock" id="edit_stock" class="form-select">
-                                                <option>In Stock</option>
-                                                <option>Out of Stock</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="col-md-6 mb-3">
-                                            <label class="fw-bold">Shipping</label>
-                                            <input type="number" name="shipping" id="edit_shipping"
-                                                class="form-control">
-                                        </div>
-
-                                        <div class="col-12 mb-3">
-                                            <label class="fw-bold">Image (optional)</label>
-                                            <input type="file" name="image" class="form-control">
-                                        </div>
-
-                                        <div class="col-12 mb-3">
-                                            <label class="fw-bold">Description</label>
-                                            <textarea name="description" id="edit_description"
-                                                class="form-control"></textarea>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button class="btn btn-primary">Update</button>
-                                </div>
-
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-            </div>
+<!-- ================= ADD PRODUCT MODAL ================= -->
+<div class="modal fade" id="addModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content p-3">
+      <h5>Add Jersey</h5>
+      <hr>
+      <form method="POST" enctype="multipart/form-data" class="row g-2">
+        <!-- Product fields -->
+        <div class="col-md-6"><input class="form-control" name="j_name" required placeholder="Jersey Name"></div>
+        <div class="col-md-3"><input class="form-control" name="category" placeholder="Category"></div>
+        <div class="col-md-3"><input class="form-control" name="country" placeholder="Country"></div>
+        <div class="col-md-3"><input class="form-control" name="type" placeholder="Type"></div>
+        <div class="col-md-3"><input class="form-control" name="price" type="number" step="any" placeholder="Price"></div>
+        <div class="col-md-3"><input class="form-control" name="discount" type="number" placeholder="Discount %"></div>
+        <div class="col-md-3"><input class="form-control" name="shipping" type="number" placeholder="Shipping"></div>
+        <div class="col-12"><textarea class="form-control" name="description" placeholder="Description"></textarea></div>
+        <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+        <div class="text-end mt-3">
+          <button type="submit" name="add_product" class="btn btn-success">Save</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         </div>
+      </form>
     </div>
+  </div>
+</div>
 
-    <script>
+<!-- ================= EDIT PRODUCT MODAL ================= -->
+<div class="modal fade" id="editModal">
+<div class="modal-dialog modal-lg"><div class="modal-content p-3">
+<h5>Edit Jersey</h5><hr>
+<form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm">
+<input type="hidden" name="edit_id" id="edit_id">
+<!-- Edit fields -->
+<div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required placeholder="Jersey Name"></div>
+<div class="col-md-3"><input class="form-control" name="category" id="edit_category" placeholder="Category"></div>
+<div class="col-md-3"><input class="form-control" name="country" id="edit_country" placeholder="Country"></div>
+<div class="col-md-3"><input class="form-control" name="type" id="edit_type" placeholder="Type"></div>
+<div class="col-md-3"><input class="form-control" name="price" type="number" step="any" id="edit_price" placeholder="Price"></div>
+<div class="col-md-3"><input class="form-control" name="discount" type="number" id="edit_discount" placeholder="Discount %"></div>
+<div class="col-md-3"><input class="form-control" name="shipping" type="number" id="edit_shipping" placeholder="Shipping"></div>
+<div class="col-12"><textarea class="form-control" name="description" id="edit_description" placeholder="Description"></textarea></div>
+<div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+<div class="text-end mt-3"><button name="edit_product" class="btn btn-success">Update</button></div>
+</form></div></div></div>
 
-        // Simple search
-        const searchBox = document.getElementById('searchBox');
-        const tbody = document.getElementById('jersiesTable').getElementsByTagName('tbody')[0];
-        searchBox?.addEventListener('input', function () {
-            const filter = this.value.toLowerCase();
-            for (let row of tbody.rows) {
-                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
-            }
-        });
-        // DELETE
-        document.querySelectorAll(".delete-btn").forEach(btn => {
-            btn.onclick = function () {
-                let id = this.dataset.id;
-                if (confirm("Confirm delete?")) {
-                    location.href = "jersies.php?delete=" + id;
-                }
-            }
-        });
+<!-- ================= SIZE MODAL (CUSTOMIZE SIZES) ================= -->
+<div class="modal fade" id="sizeModal">
+<div class="modal-dialog"><div class="modal-content p-3">
+<h5 id="sizeTitle"></h5>
+<select id="sizeSelect" class="form-select mb-2">
+<option>Small</option><option>Medium</option><option>Large</option><option>XL</option><option>XXL</option>
+</select>
+<input type="number" id="stockInput" placeholder="Stock" class="form-control mb-2">
+<button class="btn btn-success w-100" onclick="saveSize()">Save</button>
+<hr>
+<div id="sizesList"></div>
+</div></div></div>
 
-        // EDIT
-        document.querySelectorAll(".edit-btn").forEach(btn => {
-            btn.onclick = function () {
-                let id = this.dataset.id;
+<script>
+let PROD=0;
 
-                fetch("fetch_single.php?id=" + id)
-                    .then(res => res.json())
-                    .then(d => {
-                        document.getElementById("edit_id").value = d.id;
-                        document.getElementById("edit_j_name").value = d.j_name;
-                        document.getElementById("edit_category").value = d.category;
-                        document.getElementById("edit_country").value = d.country;
-                        document.getElementById("edit_type").value = d.type;
-                        document.getElementById("edit_sizes").value = d.sizes;
-                        document.getElementById("edit_quantity").value = d.quantity;
-                        document.getElementById("edit_price").value = d.price;
-                        document.getElementById("edit_discount").value = d.discount;
-                        document.getElementById("edit_stock").value = d.stock;
-                        document.getElementById("edit_shipping").value = d.shipping;
-                        document.getElementById("edit_description").value = d.description;
+/* ================= SIZE MODAL FUNCTIONS ================= */
+function openSizeModal(id,name){
+    PROD=id;
+    document.getElementById("sizeTitle").innerHTML="Sizes — "+name;
+    fetch("jersies.php",{method:"POST",
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:"fetch_sizes=1&pid="+id})
+    .then(r=>r.text()).then(d=>document.getElementById("sizesList").innerHTML=d);
+    new bootstrap.Modal(document.getElementById("sizeModal")).show();
+}
 
-                        new bootstrap.Modal(document.getElementById("editModal")).show();
-                    });
-            }
-        });
-    </script>
+function saveSize(){
+    fetch("jersies.php",{method:"POST",
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`add_size=1&product_id=${PROD}&size=${sizeSelect.value}&stock=${stockInput.value}`})
+    .then(()=>location.reload());
+}
+
+function updateStock(id,val){
+    fetch("jersies.php",{method:"POST",
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`add_size=1&product_id=${PROD}&size=&stock=${val}`});
+}
+
+function deleteSize(id){
+    fetch("jersies.php",{method:"POST",
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`del_size=${id}`}).then(()=>location.reload());
+}
+
+/* ================= EDIT MODAL FUNCTIONS ================= */
+function openEditModal(id){
+    // use current path to avoid accidental relative path issues
+    fetch(location.pathname,{
+        method:"POST",
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`fetch_product=1&id=${id}`
+    })
+    .then(async (r) => {
+        if (!r.ok) throw new Error('Network response not ok: ' + r.status);
+        const ct = r.headers.get('Content-Type') || '';
+        if (ct.includes('application/json')) return r.json();
+        // if not JSON, log full response for debugging
+        const text = await r.text();
+        console.error('Expected JSON but got:', text);
+        throw new Error('Invalid server response');
+    })
+    .then(d => {
+        if (!d || !d.id) {
+            console.error('Product data missing:', d);
+            alert('Failed to load product data');
+            return;
+        }
+        document.getElementById('edit_id').value = d.id;
+        document.getElementById('edit_name').value = d.j_name;
+        document.getElementById('edit_category').value = d.category;
+        document.getElementById('edit_country').value = d.country;
+        document.getElementById('edit_type').value = d.type;
+        document.getElementById('edit_price').value = d.price;
+        document.getElementById('edit_discount').value = d.discount;
+        document.getElementById('edit_shipping').value = d.shipping;
+        document.getElementById('edit_description').value = d.description;
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    })
+    .catch(err => {
+        console.error('Failed fetching product:', err);
+        alert('Unable to open edit dialog. See console for details.');
+    });
+}
+</script>
 
 </body>
-
 </html>
