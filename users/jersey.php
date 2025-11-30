@@ -106,12 +106,12 @@ include_once '../shared/commonlinks.php';
             <div class="col-sm-8 col-md-10 col-lg-12">
                 <form class="d-flex justify-content-center mx-auto" action="#" method="GET" style="max-width: 700px;">
                     <!-- Dropdown for Jersey Type -->
-                    <select id="jerseyType" name="type" class="form-select me-2" style="max-width: 180px;">
+                    <!-- <select id="jerseyType" name="type" class="form-select me-2" style="max-width: 180px;">
                         <option value="">Choose</option>
                         <option value="national-football">Nepal National Football</option>
                         <option value="national-cricket">Nepal National Cricket</option>
                         <option value="npl">NPL Jersey</option>
-                    </select>
+                    </select> -->
 
                     <!-- Search Input -->
                     <input id="searchInput" class="form-control me-2" type="search" name="query"
@@ -133,7 +133,7 @@ include_once '../shared/commonlinks.php';
         <div class="row justify-content-start">
             <?php
             // Query product rows (limit to 6 for homepage)
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price 
+            $res = $conn->query("SELECT id, j_name AS title, description,type, image, price 
                          FROM products 
                          WHERE category = 'football' 
                          ORDER BY id DESC LIMIT 6");
@@ -144,8 +144,10 @@ include_once '../shared/commonlinks.php';
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
+                    $type = htmlspecialchars($r['type'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
                     $price = htmlspecialchars($r['price'] ?? '');
+                    $price = intval($price);
 
                     echo "
             <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
@@ -157,10 +159,11 @@ include_once '../shared/commonlinks.php';
 
                   <div class='card-body p-2 d-flex flex-column'>
                     <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                    <p class='card-text fw-semibold text-muted small mb-2'>{$type}</p>
                     <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                     <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
+                      <li><b>Rs {$price}</b></li>
                     </ul>
                   </div>
                 </div>
@@ -190,7 +193,7 @@ include_once '../shared/commonlinks.php';
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
                     $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = htmlspecialchars($r['price'] ?? '');
+                    $price =intval( htmlspecialchars($r['price'] ?? ''));
                     echo "
                 <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
                  <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
@@ -204,7 +207,7 @@ include_once '../shared/commonlinks.php';
                     <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                     <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
+                      <li><b>Rs {$price}</b></li>
                     </ul>
                   </div>
                 </div>
@@ -233,7 +236,7 @@ include_once '../shared/commonlinks.php';
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
                     $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = htmlspecialchars($r['price'] ?? '');
+                    $price = intval(htmlspecialchars($r['price'] ?? ''));
                     echo "
                     <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
                  <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
@@ -247,7 +250,7 @@ include_once '../shared/commonlinks.php';
                     <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                     <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
+                      <li><b>Rs {$price}</b></li>
                     </ul>
                   </div>
                 </div>

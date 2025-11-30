@@ -142,6 +142,26 @@ include_once '../shared/commonlinks.php';
         }
 
 
+        .discount-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 15px;
+            z-index: 5;
+            /* stays above hover shadow */
+            box-shadow: none !important;
+            /* never gets shadow */
+            filter: brightness(1.15);
+            /* keeps pop effect even on hover */
+        }
+
+        .card:hover .discount-badge {
+            box-shadow: none !important;
+            /* ensures hover won't affect it */
+        }
+
+
+
         /* For Mobile Screens */
         @media (max-width: 768px) {
             .carousel-item {
@@ -209,12 +229,14 @@ include_once '../shared/commonlinks.php';
     </h1>
 
     <div class="container my-5">
+
+        <!-- Nepal Football Jerseys -->
+        <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
         <!-- Nepal Football Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            // Query product rows (limit to 6 for homepage)
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price 
+            $res = $conn->query("SELECT id, j_name AS title, description, image,type, price,discount 
                          FROM products 
                          WHERE category = 'football' 
                          ORDER BY id DESC LIMIT 6");
@@ -225,29 +247,40 @@ include_once '../shared/commonlinks.php';
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
+                    $type = htmlspecialchars($r['type'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = htmlspecialchars($r['price'] ?? '');
+                    $price = intval($r['price']);
+                    $discount = intval($r['discount']);
 
                     echo "
-            <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-              <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                <div class='card text-center shadow-sm border-0 h-100'>
-                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                       alt='{$title}' 
-                       style='height:310px; width:auto; object-fit:contain;'>
+        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+          <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                  <div class='card-body p-2 d-flex flex-column'>
-                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+              " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
 
-                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
-                    </ul>
-                  </div>
-                </div>
-              </a>
+              <img src='{$img}' class='card-img-top mx-auto mt-3' 
+                   alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+
+              <div class='card-body p-2 d-flex flex-column'>
+                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                <p class='card-text fw-semibold text-muted small mb-2'>{$type}</p>
+                <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                    <li>
+                        " . ($discount > 0 ?
+                        "<span style='text-decoration:line-through; color:#888;'>Rs {$price}</span>
+                        <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs {$price}</b>"
+                    ) . "
+                    </li>
+                </ul>
+
+              </div>
             </div>
-            ";
+          </a>
+        </div>";
                 }
             } else {
                 echo '<p class="text-muted">No football jerseys available.</p>';
@@ -259,39 +292,53 @@ include_once '../shared/commonlinks.php';
         <hr>
 
         <!-- Nepal Cricket Jerseys -->
+        <!-- Nepal Cricket Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            // Query product rows (limit to 6 for homepage)
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price FROM products WHERE category = 'Cricket' ORDER BY id DESC LIMIT 6");
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
+                         FROM products 
+                         WHERE category = 'Cricket' 
+                         ORDER BY id DESC LIMIT 6");
+
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
-                    //yeha $id assign garena baney view jersey ma previous jersey dekhinxa
+
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
                     $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = htmlspecialchars($r['price'] ?? '');
-                    echo "
-                <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                 <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                <div class='card text-center shadow-sm border-0 h-100'>
-                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                       alt='{$title}' 
-                       style='height:310px; width:auto; object-fit:contain;'>
+                    $price = intval($r['price']);
+                    $discount = intval($r['discount']);
 
-                  <div class='card-body p-2 d-flex flex-column'>
+                    echo "
+        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+            <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+              <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+
+                " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px;right:10px;'>{$discount}% OFF</span>" : "") . "
+
+                <img src='{$img}' class='card-img-top mx-auto mt-3'
+                     alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+
+                <div class='card-body p-2 d-flex flex-column'>
                     <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
                     <p class='card-text text-muted small mb-2'>{$desc}</p>
 
-                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
+                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                        <li>
+                            " . ($discount > 0 ?
+                        "<span style='text-decoration:line-through;color:#888;'>Rs {$price}</span>
+                            <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs {$price}</b>"
+                    ) . "
+                        </li>
                     </ul>
-                  </div>
+
                 </div>
-              </a>
-            </div>
-                    ";
+              </div>
+            </a>
+        </div>";
                 }
             } else {
                 echo '<p class="text-muted">No Cricket jerseys available.</p>';
@@ -299,48 +346,67 @@ include_once '../shared/commonlinks.php';
             ?>
         </div>
 
+
         <hr>
 
         <!-- NPL Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
         <div class="row justify-content-start">
+
             <?php
-            // Query product rows (limit to 6 for homepage)
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price FROM products WHERE category = 'NPL cricket' ORDER BY id DESC LIMIT 6");
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price,discount 
+                     FROM products 
+                     WHERE category = 'NPL cricket' 
+                     ORDER BY id DESC LIMIT 6");
+
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
-                    //yeha assign garena baney view_jersey ma previous jersey id select hunca
+
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
                     $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = htmlspecialchars($r['price'] ?? '');
+                    $price = intval($r['price']);
+                    $discount = intval($r['discount']);
+
                     echo "
-                    <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                 <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                <div class='card text-center shadow-sm border-0 h-100'>
-                  <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                       alt='{$title}' 
-                       style='height:310px; width:auto; object-fit:contain;'>
+        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+            <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                  <div class='card-body p-2 d-flex flex-column'>
-                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+                    <!-- DISCOUNT BADGE (only display if >0) -->
+                    " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute ' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
 
-                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width: 200px;'>
-                      <li><strong>Price:</strong> {$price}</li>
-                    </ul>
-                  </div>
+                    <img src='{$img}' class='card-img-top mx-auto mt-3'
+                         alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+
+                    <div class='card-body p-2 d-flex flex-column'>
+                        <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                        <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                        <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+    <li>
+        " . ($discount > 0 ?
+                        "<span style='text-decoration:line-through; color:#888;'>Rs {$price}</span> 
+             <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
+                        :
+                        "<b>Rs {$price}</b>"
+                    ) . "
+    </li>
+</ul>
+
+
+                    </div>
                 </div>
-              </a>
-            </div>
-                    ";
+            </a>
+        </div>";
                 }
             } else {
-                echo '<p class="text-muted">No NPL jerseys available.</p>';
+                echo "<p class='text-muted'>No NPL jerseys available.</p>";
             }
             ?>
         </div>
+
     </div>
 
     <?php include_once 'footer.php'; ?>
