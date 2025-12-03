@@ -232,8 +232,6 @@ include_once '../shared/commonlinks.php';
 
         <!-- Nepal Football Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
-        <!-- Nepal Football Jerseys -->
-        <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
         <div class="row justify-content-start">
             <?php
             $res = $conn->query("SELECT id, j_name AS title, description, image,type, price,discount 
