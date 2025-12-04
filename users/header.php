@@ -25,7 +25,7 @@ include_once "../shared/commonlinks.php";
         <li class="nav-item"><a class="nav-link me-3 active" href="index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="jersey.php">Jerseys</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="#">Kits</a></li>
-        <li class="nav-item"><a class="nav-link me-3" href="#">Contact</a></li>
+        <li class="nav-item"><a class="nav-link me-3" href="Contact.php">Contact</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="#">About</a></li>
       </ul>
 

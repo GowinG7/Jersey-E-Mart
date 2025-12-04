@@ -150,7 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
             </div>
             <div class="form-group">
                 <label for="question">Choose Security Question:</label>
-                <select id="question" name="question" style="color:blue" required>
+                <select id="question" name="question" style="color: rgb(0,0,0,0.6)" required>
                     <option value="">Please select:</option>
                     <option value="color">Favourite Color</option>
                     <option value="food">Favourite Food</option>
