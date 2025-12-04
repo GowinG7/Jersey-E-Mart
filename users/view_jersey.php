@@ -1,4 +1,7 @@
 <?php
+session_start();
+include("header.php");
+
 require_once "../shared/dbconnect.php";
 include_once "../shared/commonlinks.php";
 

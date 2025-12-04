@@ -1,5 +1,6 @@
 <?php
 session_start();
+
 require_once("../../shared/dbconnect.php");
 include_once("../../shared/commonlinks.php");
 
@@ -10,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
 
     if (!empty($unameOrEmail) && !empty($pass)) {
         // Prepare query to check for username OR email
-        $stmt = $conn->prepare("SELECT id, username, password FROM user_creden WHERE username = ? OR email = ?");
+        $stmt = $conn->prepare("SELECT id, name, username, password FROM user_creden WHERE username = ? OR email = ?");
         if ($stmt) {
             $stmt->bind_param("ss", $unameOrEmail, $unameOrEmail);
             $stmt->execute();
@@ -21,10 +22,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
 
                 // Verify hashed password
                 if (password_verify($pass, $row["password"])) {
+                    // Safe: only set session after password is correct
+                    //aba login gareko user ko id ra username session ma store garna set grney
                     $_SESSION["user_id"] = $row["id"];
                     $_SESSION["user_name"] = $row["username"];
+                    $_SESSION["nam"] = $row["name"];
 
-                    header("Location: ../homepage.php");
+                    header("Location: ../index.php");
                     exit();
                 } else {
                     $_SESSION["errorMessage"] = "Incorrect password!";

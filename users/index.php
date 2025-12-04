@@ -1,4 +1,7 @@
 <?php
+session_start();
+include("header.php");
+
 require_once '../shared/dbconnect.php';
 include_once '../shared/commonlinks.php';
 ?>
@@ -179,7 +182,6 @@ include_once '../shared/commonlinks.php';
 </head>
 
 <body>
-    <?php include_once 'header.php'; ?>
 
     <!-- Carousel -->
     <div class="container py-4">
