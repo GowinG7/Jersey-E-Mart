@@ -119,7 +119,8 @@ include_once '../shared/commonlinks.php';
 <body>
     <?php include_once 'header.php'; ?>
 
-    <h2 class="text-center section-title animate__animated" style="color:rgb(155,125,170,1);">Explore our Premium Products</h2>
+    <h2 class="text-center section-title animate__animated" style="color:rgb(155,125,170,1);">Explore our Premium
+        Products</h2>
     <!-- for search bar -->
     <div class="container mt-3">
         <div class="row justify-content-center">
@@ -168,34 +169,34 @@ include_once '../shared/commonlinks.php';
                     $discount = intval($r['discount']);
 
                     echo "
-        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-          <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                        <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-              " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
+                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
 
-              <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                   alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+                            <img src='{$img}' class='card-img-top mx-auto mt-3' 
+                                alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
 
-              <div class='card-body p-2 d-flex flex-column'>
-                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                <p class='card-text fw-semibold text-muted small mb-2'>{$type}</p>
-                <p class='card-text text-muted small mb-2'>{$desc}</p>
+                            <div class='card-body p-2 d-flex flex-column'>
+                            <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                            <p class='card-text fw-semibold text-muted small mb-2'>{$type}</p>
+                            <p class='card-text text-muted small mb-2'>{$desc}</p>
 
-                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                    <li>
-                        " . ($discount > 0 ?
-                        "<span style='text-decoration:line-through; color:#888;'>Rs {$price}</span>
-                        <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
-                        : "<b>Rs {$price}</b>"
-                    ) . "
-                    </li>
-                </ul>
+                            <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                                <li>
+                                    " . ($discount > 0
+                                ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                                : "<b>Rs " . number_format($price) . "</b>"
+                            ) . "
+                                </li>
+                            </ul>
 
-              </div>
-            </div>
-          </a>
-        </div>";
+                            </div>
+                        </div>
+                        </a>
+                        </div>";
                 }
             } else {
                 echo '<p class="text-muted">No football jerseys available.</p>';
@@ -206,7 +207,6 @@ include_once '../shared/commonlinks.php';
 
         <hr>
 
-        <!-- Nepal Cricket Jerseys -->
         <!-- Nepal Cricket Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
@@ -227,33 +227,33 @@ include_once '../shared/commonlinks.php';
                     $discount = intval($r['discount']);
 
                     echo "
-        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-            <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-              <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px;right:10px;'>{$discount}% OFF</span>" : "") . "
+                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px;right:10px;'>{$discount}% OFF</span>" : "") . "
 
-                <img src='{$img}' class='card-img-top mx-auto mt-3'
-                     alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+                            <img src='{$img}' class='card-img-top mx-auto mt-3'
+                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
 
-                <div class='card-body p-2 d-flex flex-column'>
-                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                    <p class='card-text text-muted small mb-2'>{$desc}</p>
+                            <div class='card-body p-2 d-flex flex-column'>
+                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text text-muted small mb-2'>{$desc}</p>
 
-                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                        <li>
-                            " . ($discount > 0 ?
-                        "<span style='text-decoration:line-through;color:#888;'>Rs {$price}</span>
-                            <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
-                        : "<b>Rs {$price}</b>"
+                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                                <li>
+                                    " . ($discount > 0
+                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs " . number_format($price) . "</b>"
                     ) . "
-                        </li>
-                    </ul>
+                                </li>
+                                </ul>
 
-                </div>
-              </div>
-            </a>
-        </div>";
+                            </div>
+                            </div>
+                        </a>
+                        </div>";
                 }
             } else {
                 echo '<p class="text-muted">No Cricket jerseys available.</p>';
@@ -285,36 +285,36 @@ include_once '../shared/commonlinks.php';
                     $discount = intval($r['discount']);
 
                     echo "
-        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-            <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                        <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                    <!-- DISCOUNT BADGE (only display if >0) -->
-                    " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute ' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
-
-                    <img src='{$img}' class='card-img-top mx-auto mt-3'
-                         alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
-                    <div class='card-body p-2 d-flex flex-column'>
-                        <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                        <p class='card-text text-muted small mb-2'>{$desc}</p>
-
-                        <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-    <li>
-        " . ($discount > 0 ?
-                        "<span style='text-decoration:line-through; color:#888;'>Rs {$price}</span> 
-             <b class='ms-2 text-success'>Rs " . ($price - ($price * $discount / 100)) . "</b>"
-                        :
-                        "<b>Rs {$price}</b>"
+                            <!-- DISCOUNT BADGE (only display if >0) -->
+                            " . ($discount > 0
+                        ? "<span class='badge bg-danger discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>"
+                        : ""
                     ) . "
-    </li>
-</ul>
 
+                            <img src='{$img}' class='card-img-top mx-auto mt-3'
+                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
 
-                    </div>
-                </div>
-            </a>
-        </div>";
+                            <div class='card-body p-2 d-flex flex-column'>
+                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text text-muted small mb-2'>{$desc}</p>
+
+                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                                    <li>
+                                        " . ($discount > 0
+                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                                <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                        : "<b class='ms-2 text-success'>Rs " . number_format($price) . "</b>"
+                    ) . "
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        </a>
+                        </div>";
                 }
             } else {
                 echo "<p class='text-muted'>No NPL jerseys available.</p>";
