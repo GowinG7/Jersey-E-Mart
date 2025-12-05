@@ -178,6 +178,7 @@ if (isset($_POST['send'])) {
         </div>
     </div>
 
+    <?php include("footer.php"); ?>
 
     <script>
         const namePattern = /^[a-zA-Z\s]+$/;
