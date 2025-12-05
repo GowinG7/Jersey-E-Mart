@@ -10,24 +10,28 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Check if product ID is provided
-if (isset($_GET['pid'])) {
-    $product_id = intval($_GET['pid']); // sanitize input
+// Check if all parameters are provided
+if (isset($_GET['pid']) && isset($_GET['size']) && isset($_GET['quality'])) {
+    $product_id = intval($_GET['pid']);
+    $jersey_size = trim($_GET['size']);
+    $quality = trim($_GET['quality']);
 
-    // Prepare and execute delete query
-    $stmt = $conn->prepare("DELETE FROM cart_items WHERE user_id = ? AND product_id = ?");
-    $stmt->bind_param("ii", $user_id, $product_id);
-    
+    // Delete the exact item
+    $stmt = $conn->prepare("
+        DELETE FROM cart_items 
+        WHERE user_id = ? AND product_id = ? AND jersey_size = ? AND quality = ?
+    ");
+    $stmt->bind_param("iiss", $user_id, $product_id, $jersey_size, $quality);
+
     if ($stmt->execute()) {
         $stmt->close();
-        header("Location: displaycart.php");
+        header("Location: displaycart.php?removed=1");
         exit();
     } else {
+        echo "Failed to remove item: " . $conn->error;
         $stmt->close();
-        echo "Failed to remove item from cart: " . $conn->error;
     }
 } else {
-    // If no product ID, redirect to cart
     header("Location: displaycart.php");
     exit();
 }

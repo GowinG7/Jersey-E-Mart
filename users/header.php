@@ -65,7 +65,7 @@ if (isset($_SESSION['user_id'])) {
   }
 </style>
 
-<nav id="nav-bar" class="navbar navbar-expand-lg shadow-sm" style="background-color: rgba(71, 145, 137, 1);">
+<nav id="nav-bar" class="navbar navbar-expand-lg shadow-sm" style="background-color: rgba(71, 145, 137, 1)">
   <div class="container-fluid px-lg-5">
     <img src="images/logo.png" alt="Logo" class="ms-2 rounded-circle"
       style="height:50px; width:100px; margin-right:20px;">
