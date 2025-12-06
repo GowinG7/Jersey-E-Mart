@@ -71,7 +71,6 @@ if (isset($_POST['add_product'])) {
     $type = $_POST['type'];
     $price = $_POST['price'];
     $discount = $_POST['discount'];
-    $shipping = $_POST['shipping'];
     $desc = $_POST['description'];
 
     $image = "";
@@ -80,9 +79,9 @@ if (isset($_POST['add_product'])) {
         move_uploaded_file($_FILES['image']['tmp_name'], "../shared/products/$image");
     }
 
-    $q = $conn->prepare("INSERT INTO products(j_name,category,country,type,price,discount,shipping,description,image)
-    VALUES(?,?,?,?,?,?,?,?,?)");
-    $q->bind_param("ssssddsss", $name, $cat, $country, $type, $price, $discount, $shipping, $desc, $image);
+    $q = $conn->prepare("INSERT INTO products(j_name,category,country,type,price,discount,description,image)
+    VALUES(?,?,?,?,?,?,?,?)");
+    $q->bind_param("ssssddss", $name, $cat, $country, $type, $price, $discount, $desc, $image);
     $q->execute();
     header("Location: jersies.php");
     exit;
@@ -97,7 +96,6 @@ if (isset($_POST['edit_product'])) {
     $type = $_POST['type'];
     $price = $_POST['price'];
     $discount = $_POST['discount'];
-    $shipping = $_POST['shipping'];
     $desc = $_POST['description'];
 
     $imageSQL = "";
@@ -108,7 +106,7 @@ if (isset($_POST['edit_product'])) {
     }
 
     $conn->query("UPDATE products SET j_name='$name', category='$cat', country='$country', type='$type', price='$price',
-    discount='$discount', shipping='$shipping', description='$desc' $imageSQL WHERE id=$id");
+    discount='$discount', description='$desc' $imageSQL WHERE id=$id");
     header("Location: jersies.php");
     exit;
 }
@@ -170,7 +168,6 @@ if (isset($_GET['del'])) {
                         <th>Country</th>
                         <th>Price</th>
                         <th>Discount</th>
-                        <th>Shipping</th>
                         <th>Final</th>
                         <th>Sizes</th>
                         <th width="200">Action</th>
@@ -182,7 +179,7 @@ if (isset($_GET['del'])) {
                     $r = $conn->query("SELECT * FROM products ORDER BY id DESC");
                     while ($p = $r->fetch_assoc()) {
                         $pid = $p['id'];
-                        $final = $p['price'] - ($p['price'] * $p['discount'] / 100) + $p['shipping'];
+                        $final = $p['price'] - ($p['price'] * $p['discount'] / 100);
                         ?>
                         <tr>
                             <td><img src="../shared/products/<?= $p['image'] ?>" width="55"></td>
@@ -191,7 +188,6 @@ if (isset($_GET['del'])) {
                             <td><?= $p['country'] ?></td>
                             <td><?= $p['price'] ?></td>
                             <td><?= $p['discount'] ?>%</td>
-                            <td><?= $p['shipping'] ?></td>
                             <td class="fw-bold text-success"><?= $final ?></td>
 
                             <td id="sizeCell<?= $pid ?>"> <!-- Display Sizes -->
@@ -239,8 +235,6 @@ if (isset($_GET['del'])) {
                                 placeholder="Price"></div>
                         <div class="col-md-3"><input class="form-control" name="discount" type="number"
                                 placeholder="Discount %"></div>
-                        <div class="col-md-3"><input class="form-control" name="shipping" type="number"
-                                placeholder="Shipping"></div>
                         <div class="col-12"><textarea class="form-control" name="description"
                                 placeholder="Description"></textarea></div>
                         <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
@@ -274,8 +268,6 @@ if (isset($_GET['del'])) {
                                 id="edit_price" placeholder="Price"></div>
                         <div class="col-md-3"><input class="form-control" name="discount" type="number"
                                 id="edit_discount" placeholder="Discount %"></div>
-                        <div class="col-md-3"><input class="form-control" name="shipping" type="number"
-                                id="edit_shipping" placeholder="Shipping"></div>
                         <div class="col-12"><textarea class="form-control" name="description" id="edit_description"
                                 placeholder="Description"></textarea></div>
                         <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
@@ -408,7 +400,6 @@ if (isset($_GET['del'])) {
                     document.getElementById('edit_type').value = d.type;
                     document.getElementById('edit_price').value = d.price;
                     document.getElementById('edit_discount').value = d.discount;
-                    document.getElementById('edit_shipping').value = d.shipping;
                     document.getElementById('edit_description').value = d.description;
                     new bootstrap.Modal(document.getElementById('editModal')).show();
                 })
