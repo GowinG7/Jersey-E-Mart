@@ -15,7 +15,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // fetch cart and calculate total
-$stmt = $conn->prepare("SELECT id, product_id, pname, quantity, final_price, shipping, image FROM cart_items WHERE user_id = ?");
+$stmt = $conn->prepare("SELECT id, product_id, pname, quantity, price_after_discount, shipping, image FROM cart_items WHERE user_id = ?");
 $stmt->bind_param("i",$user_id);
 $stmt->execute();
 $res = $stmt->get_result();

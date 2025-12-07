@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_quantity'])) {
     mysqli_query($conn, "UPDATE cart_items SET quantity = $quantity WHERE user_id = $user_id AND product_id = $pid");
 }
 
-// fetch cart items from cart_items table
+// fetch cart items
 $query = "SELECT * FROM cart_items WHERE user_id = $user_id";
 $result = mysqli_query($conn, $query);
 ?>
@@ -92,7 +92,6 @@ $result = mysqli_query($conn, $query);
 
         .btn-remove:hover {
             background-color: #b30000;
-            color: white;
         }
     </style>
 </head>
@@ -102,7 +101,9 @@ $result = mysqli_query($conn, $query);
         <h2>Shopping Cart</h2>
 
         <?php if (mysqli_num_rows($result) > 0):
-            $grand_total = 0; ?>
+            $grand_total = 0;
+            $shipping_cost = 150; // shipping cost per order
+            ?>
             <table>
                 <tr>
                     <th>Image</th>
@@ -114,13 +115,15 @@ $result = mysqli_query($conn, $query);
                     <th>Print Name</th>
                     <th>Print Number</th>
                     <th>Print Cost</th>
-                    <th>Shipping</th>
+                    <th>Discount</th>
                     <th>Quantity</th>
-                    <th>Total</th>
+                    <th>Price after discount</th>
                     <th>Action</th>
                 </tr>
                 <?php while ($row = mysqli_fetch_assoc($result)):
-                    $total = $row['final_price'] * $row['quantity'];
+                    $price_after_discount = floatval($row['price_after_discount']);
+                    $quantity = intval($row['quantity']);
+                    $total = round($price_after_discount * $quantity, 2);
                     $grand_total += $total;
                     ?>
                     <tr>
@@ -129,11 +132,11 @@ $result = mysqli_query($conn, $query);
                         <td><?php echo $row['category']; ?></td>
                         <td><?php echo $row['jersey_size']; ?></td>
                         <td><?php echo $row['quality']; ?></td>
-                        <td>Rs. <?php echo number_format($row['base_price']); ?></td>
+                        <td>Rs. <?php echo number_format(intval($row['base_price'])); ?></td>
                         <td><?php echo $row['print_name'] ?: '-'; ?></td>
                         <td><?php echo $row['print_number'] ?: '-'; ?></td>
-                        <td>Rs. <?php echo number_format($row['print_cost']); ?></td>
-                        <td>Rs. <?php echo number_format($row['shipping']); ?></td>
+                        <td><?php echo $row['print_cost'] > 0 ? 'Rs. ' . number_format(intval($row['print_cost'])) : '-'; ?></td>
+                        <td><?php echo (!empty($row['discount']) && intval($row['discount']) > 0) ? number_format(floatval($row['discount'])) . '%' : '-'; ?></td>
                         <td>
                             <form method="POST" action="displaycart.php">
                                 <input type="number" name="quantity" value="<?php echo $row['quantity']; ?>" min="1">
@@ -141,36 +144,37 @@ $result = mysqli_query($conn, $query);
                                 <button type="submit" name="update_quantity" class="btn">Update</button>
                             </form>
                         </td>
-                        <td>Rs. <?php echo number_format($total, 2); ?></td>
+                        <td>Rs. <?php echo number_format(intval($total)); ?></td>
                         <td>
-                            <a href="remove.php?
-                                pid=<?php echo $row['product_id']; ?>
-                                &quality=<?php echo ($row['quality']); ?>
-                                &size=<?php echo ($row['jersey_size']); ?>" class="btn btn-remove"
-                                onclick="return confirm('Are you sure to remove this item from cart?');">
+                            <a href="remove.php?pid=<?php echo $row['product_id']; ?>&quality=<?php echo $row['quality']; ?>&size=<?php echo $row['jersey_size']; ?>"
+                                class="btn btn-remove" onclick="return confirm('Are you sure to remove this item from cart?');">
                                 Remove
                             </a>
-
                         </td>
                     </tr>
                 <?php endwhile; ?>
+                <tr>
+                    <td colspan="11"><b>Shipping</b></td>
+                    <td colspan="2">Rs. <?php echo number_format(intval($shipping_cost)); ?></td>
+                </tr>
+                <?php $grand_total += $shipping_cost; ?>
                 <tr style="color:green;">
                     <td colspan="11"><b>Grand Total</b></td>
-                    <td colspan="2"><b>Rs. <?php echo number_format($grand_total, 2); ?></b></td>
+                    <td colspan="2"><b>Rs. <?php echo number_format(intval($grand_total )); ?></b></td>
                 </tr>
             </table>
+
             <br>
             <form method="POST" action="order_form.php">
                 <button type="submit" name="order" class="btn" style="background-color:teal;">Order Now</button>
             </form>
-            <br><br>
+            
             <a href="jersey.php" class="btn">Continue Shopping</a>
+
         <?php else: ?>
             <p>Your cart is empty. <a href="jersey.php">Start Shopping</a></p>
         <?php endif; ?>
     </div>
-
-
 </body>
 
 </html>

@@ -14,6 +14,14 @@ if (!$result || mysqli_num_rows($result) == 0)
 
 $p = mysqli_fetch_assoc($result);
 $img = "../shared/products/" . $p['image'];
+
+// Base price & discount
+$basePrice = floatval($p['price']);
+$discount = floatval($p['discount']);
+$displayPrice = $basePrice;
+if ($discount > 0) {
+    $displayPrice = $basePrice - ($basePrice * $discount / 100);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,14 +53,6 @@ $img = "../shared/products/" . $p['image'];
             width: 70px;
         }
 
-        .note-box {
-            background: #fff8e6;
-            border-left: 4px solid #ffc107;
-            padding: 10px 12px;
-            border-radius: 6px;
-            margin-top: 15px;
-        }
-
         #sizeAlert {
             display: none;
             color: red;
@@ -65,26 +65,26 @@ $img = "../shared/products/" . $p['image'];
 <body style="background-color:#e9f8f6; font-family:Segoe UI;">
     <div class="container py-5">
         <div class="row g-4">
-            <!-- Product Image -->
+            <!-- Image -->
             <div class="col-md-6 text-center">
                 <img src="<?php echo $img; ?>" class="img-fluid shadow-sm rounded"
                     style="background:#fff;padding:18px;max-height:480px;object-fit:contain;">
             </div>
 
-            <!-- Product Details -->
+            <!-- Details -->
             <div class="col-md-6">
                 <h2 class="fw-bold" style="color:#1c6059;"><?php echo htmlspecialchars($p['j_name']); ?></h2>
                 <p class="text-muted"><?php echo htmlspecialchars($p['description']); ?></p>
 
                 <div class="my-3">
-                    <?php if ($p['discount'] > 0):
-                        $new = $p['price'] - ($p['price'] * $p['discount'] / 100); ?>
+                    <?php if ($discount > 0):
+                        $new = $basePrice - ($basePrice * $discount / 100); ?>
                         <span style="text-decoration:line-through;color:#777;">Rs
-                            <?php echo number_format($p['price'], 0); ?></span>
-                        <span class="fw-bold text-success h4 ms-2">Rs <?php echo number_format($new, 0); ?></span>
-                        <span class="badge bg-danger ms-2"><?php echo $p['discount']; ?>% OFF</span>
+                            <?php echo number_format($basePrice); ?></span>
+                        <span class="fw-bold text-success h4 ms-2">Rs <?php echo number_format($new); ?></span>
+                        <span class="badge bg-danger ms-2"><?php echo $discount; ?>% OFF</span>
                     <?php else: ?>
-                        <h4 class="text-success fw-bold">Rs <?php echo number_format($p['price'], 0); ?></h4>
+                        <h4 class="text-success fw-bold">Rs <?php echo number_format($basePrice); ?></h4>
                     <?php endif; ?>
                 </div>
 
@@ -107,9 +107,6 @@ $img = "../shared/products/" . $p['image'];
                 <input type="hidden" id="sizeInput" value="">
                 <div id="sizeAlert"></div>
 
-                <div class="note-box">If you need a complete jersey set (full kit), contact the admin for special
-                    pricing.</div>
-
                 <label class="fw-semibold mt-3">Quantity</label>
                 <input type="number" id="qty" class="form-control qty-box mb-3" value="1" min="1">
 
@@ -122,7 +119,7 @@ $img = "../shared/products/" . $p['image'];
         </div>
     </div>
 
-    <!-- CUSTOMIZE MODAL -->
+    <!-- Customize Modal -->
     <div class="modal fade" id="customizeModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-3">
@@ -132,14 +129,15 @@ $img = "../shared/products/" . $p['image'];
                 </div>
                 <form action="cart.php" method="POST" id="customForm">
                     <input type="hidden" name="product_id" value="<?php echo $p['id']; ?>">
-                    <input type="hidden" id="finalPrice" name="final_price" value="<?php echo $p['price']; ?>">
+                    <input type="hidden" id="finalPrice" name="final_price" value="<?php echo $displayPrice; ?>">
                     <input type="hidden" name="size" id="customSize">
                     <input type="hidden" name="quantity" id="customQty" value="1">
-
+                    <input type="hidden" name="type" id="customType" value="">
                     <div class="modal-body">
                         <label class="fw-semibold">Final Price:</label>
                         <h4 class="text-success fw-bold" id="priceDisplay">Rs
-                            <?php echo number_format($p['price'], 0); ?></h4>
+                            <?php echo number_format($displayPrice); ?>
+                        </h4>
 
                         <label class="form-label fw-semibold">Jersey Type:</label>
                         <select class="form-select" id="jerseyType" name="type">
@@ -164,7 +162,8 @@ $img = "../shared/products/" . $p['image'];
     </div>
 
     <script>
-        const basePrice = <?php echo $p['price']; ?>;
+        const basePrice = <?php echo $basePrice; ?>; // original price
+        const discount = <?php echo $discount; ?>;   // discount in %
         const priceDisplay = document.getElementById("priceDisplay");
         const finalPriceInput = document.getElementById("finalPrice");
         const typeSelect = document.getElementById("jerseyType");
@@ -173,14 +172,24 @@ $img = "../shared/products/" . $p['image'];
         const customForm = document.getElementById("customForm");
 
         function updatePrice() {
-            let finalPrice = basePrice;
-            if (typeSelect.value === "Premium") finalPrice += 1000;
-            if (typeSelect.value === "Replica") finalPrice -= 700;
-            if (nameInput.value.trim() !== "") finalPrice += 150;
-            if (numberInput.value.trim() !== "") finalPrice += 100;
+            let adjustedPrice = basePrice;
 
-            finalPriceInput.value = Math.round(finalPrice);
-            priceDisplay.innerText = "Rs " + finalPriceInput.value;
+            // Step 1: Apply quality adjustment first
+            if (typeSelect.value === "Premium") adjustedPrice += 1000;
+            if (typeSelect.value === "Replica") adjustedPrice -= 700;
+
+            // Step 2: Apply discount
+            if (discount > 0) adjustedPrice -= (adjustedPrice * discount / 100);
+
+            // Step 3: Add print costs
+            if (nameInput.value.trim() !== "") adjustedPrice += 100;
+            if (numberInput.value.trim() !== "") adjustedPrice += 50;
+
+            // Step 4: Update inputs and display
+            adjustedPrice = Math.round(adjustedPrice);
+            finalPriceInput.value = adjustedPrice;
+            priceDisplay.innerText = "Rs " + adjustedPrice;
+            document.getElementById("customType").value = typeSelect.value;
         }
 
         typeSelect.addEventListener("change", updatePrice);
@@ -208,7 +217,7 @@ $img = "../shared/products/" . $p['image'];
             window.location.href = `cart.php?id=<?php echo $id; ?>&size=${size}&qty=${qty}`;
         });
 
-        // Before submitting customize modal, set size and qty
+        // Customize modal form
         customForm.addEventListener("submit", function (e) {
             const selectedSize = document.getElementById("sizeInput").value;
             const selectedQty = document.getElementById("qty").value || 1;
