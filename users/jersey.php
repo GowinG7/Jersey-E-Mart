@@ -155,7 +155,7 @@ include_once '../shared/commonlinks.php';
         <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image,type, price,discount 
+            $res = $conn->query("SELECT id, j_name AS title, description, image,quality, price,discount 
                          FROM products 
                          WHERE category = 'football' 
                          ORDER BY id DESC LIMIT 6");
@@ -166,7 +166,7 @@ include_once '../shared/commonlinks.php';
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
-                    $type = htmlspecialchars($r['type'] ?? '');
+                    $quality = htmlspecialchars($r['quality'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
                     $price = intval($r['price']);
                     $discount = intval($r['discount']);
@@ -183,7 +183,7 @@ include_once '../shared/commonlinks.php';
 
                             <div class='card-body p-2 d-flex flex-column'>
                             <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                            <p class='card-text fw-semibold text-muted small mb-2'>{$type}</p>
+                            <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
                             <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                             <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>

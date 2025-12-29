@@ -2,7 +2,7 @@
 require_once "../shared/dbconnect.php";
 
 
-/* ---------------- FETCH PRODUCT DATA FOR EDIT ---------------- */
+/*  FETCH PRODUCT DATA FOR EDIT  */
 if (isset($_POST['fetch_product'])) {
     $id = (int) $_POST['id'];
     $res = $conn->query("SELECT * FROM products WHERE id=$id");
@@ -11,7 +11,7 @@ if (isset($_POST['fetch_product'])) {
     exit;
 }
 
-/* ---------------- FETCH SIZES FOR CUSTOMIZATION ---------------- */
+/*  FETCH SIZES FOR CUSTOMIZATION  */
 if (isset($_POST['fetch_sizes'])) {
     $pid = (int) $_POST['pid'];
     $q = $conn->query("SELECT * FROM product_sizes WHERE product_id=$pid");
@@ -23,15 +23,15 @@ if (isset($_POST['fetch_sizes'])) {
         echo "
         <div class='d-flex align-items-center mb-1'>
             <b style='width:45px;'>$s[size]</b>
-            <input type='number' class='form-control form-control-sm mx-2'
-                value='$s[stock]' onchange='updateStock($s[id],this.value)' style='width:70px'>
+            <input type='number' readonly class='form-control form-control-sm mx-2'
+                value='$s[stock]' style='width:70px' aria-label='stock-$s[id]'>
             <button onclick='deleteSize($s[id])' class='btn btn-danger btn-sm py-0'>x</button>
         </div>";
     }
     exit;
 }
 
-/* ---------------- ADD / UPDATE SIZE ---------------- */
+/*  ADD / UPDATE SIZE  */
 if (isset($_POST['add_size'])) {
     $pid = (int) $_POST['product_id'];
     $size = $_POST['size'];
@@ -52,23 +52,32 @@ if (isset($_POST['add_size'])) {
     }
 }
 
-/* ---------------- DELETE SIZE ---------------- */
+/*  DELETE SIZE  */
 if (isset($_POST['del_size'])) {
     $conn->query("DELETE FROM product_sizes WHERE id=" . (int) $_POST['del_size']);
     echo "deleted";
     exit;
 }
 
-/* ============================================================
-   PRODUCT HANDLERS — add, edit, delete
-   ============================================================ */
+/*  UPDATE STOCK BY SIZE ID */
+if (isset($_POST['update_stock'])) {
+    $sid = (int) $_POST['id'];
+    $stock = (int) $_POST['stock'];
+    $conn->query("UPDATE product_sizes SET stock='$stock' WHERE id=$sid");
+    echo "updated";
+    exit;
+}
 
-/* ---------------- ADD PRODUCT ---------------- */
+/* 
+   PRODUCT HANDLERS — add, edit, delete
+   */
+
+/*  ADD PRODUCT  */
 if (isset($_POST['add_product'])) {
     $name = $_POST['j_name'];
     $cat = $_POST['category'];
     $country = $_POST['country'];
-    $type = $_POST['type'];
+    $quality = $_POST['quality'];
     $price = $_POST['price'];
     $discount = $_POST['discount'];
     $desc = $_POST['description'];
@@ -81,19 +90,19 @@ if (isset($_POST['add_product'])) {
 
     $q = $conn->prepare("INSERT INTO products(j_name,category,country,type,price,discount,description,image)
     VALUES(?,?,?,?,?,?,?,?)");
-    $q->bind_param("ssssddss", $name, $cat, $country, $type, $price, $discount, $desc, $image);
+    $q->bind_param("ssssddss", $name, $cat, $country, $quality, $price, $discount, $desc, $image);
     $q->execute();
     header("Location: jersies.php");
     exit;
 }
 
-/* ---------------- EDIT PRODUCT ---------------- */
+/*  EDIT PRODUCT  */
 if (isset($_POST['edit_product'])) {
     $id = $_POST['edit_id'];
     $name = $_POST['j_name'];
     $cat = $_POST['category'];
     $country = $_POST['country'];
-    $type = $_POST['type'];
+    $quality = $_POST['quality'];
     $price = $_POST['price'];
     $discount = $_POST['discount'];
     $desc = $_POST['description'];
@@ -105,13 +114,13 @@ if (isset($_POST['edit_product'])) {
         $imageSQL = ", image='$image'";
     }
 
-    $conn->query("UPDATE products SET j_name='$name', category='$cat', country='$country', type='$type', price='$price',
+    $conn->query("UPDATE products SET j_name='$name', category='$cat', country='$country', quality='$quality', price='$price',
     discount='$discount', description='$desc' $imageSQL WHERE id=$id");
     header("Location: jersies.php");
     exit;
 }
 
-/* ---------------- DELETE PRODUCT ---------------- */
+/*  DELETE PRODUCT  */
 if (isset($_GET['del'])) {
     $conn->query("DELETE FROM products WHERE id=" . $_GET['del']);
     header("Location: jersies.php");
@@ -166,6 +175,7 @@ if (isset($_GET['del'])) {
                         <th>Name</th>
                         <th>Category</th>
                         <th>Country</th>
+                        <th>Quality</th>
                         <th>Price</th>
                         <th>Discount</th>
                         <th>Final</th>
@@ -186,6 +196,7 @@ if (isset($_GET['del'])) {
                             <td><?= $p['j_name'] ?></td>
                             <td><?= $p['category'] ?></td>
                             <td><?= $p['country'] ?></td>
+                            <td><?= $p['quality'] ?></td>
                             <td><?= $p['price'] ?></td>
                             <td><?= $p['discount'] ?>%</td>
                             <td class="fw-bold text-success"><?= $final ?></td>
@@ -203,9 +214,8 @@ if (isset($_GET['del'])) {
 
                             <td>
                                 <!-- BUTTONS: Size Modal (Customize), Edit Modal, Delete -->
-                                <button class="btn btn-primary btn-sm"
-                                    onclick="openSizeModal(<?= $pid ?>,'<?= $p['j_name'] ?>')">Manage</button>
-                                <button class="btn btn-warning btn-sm" onclick="openEditModal(<?= $pid ?>)">Edit</button>
+                                <button type="button" class="btn btn-primary btn-sm btn-manage" data-pid="<?= $pid ?>" data-name='<?= htmlspecialchars($p['j_name'], ENT_QUOTES) ?>'>Manage</button>
+                                <button type="button" class="btn btn-warning btn-sm" onclick="openEditModal(<?= $pid ?>)">Edit</button>
                                 <a href="?del=<?= $pid ?>" class="btn btn-danger btn-sm"
                                     onclick="return confirm('Remove Jersey?')">Delete</a>
                             </td>
@@ -215,7 +225,7 @@ if (isset($_GET['del'])) {
             </table>
         </div>
 
-        <!-- ================= ADD PRODUCT MODAL ================= -->
+        <!--  ADD PRODUCT MODAL  -->
         <div class="modal fade" id="addModal">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content p-3">
@@ -224,19 +234,26 @@ if (isset($_GET['del'])) {
                     <form method="POST" enctype="multipart/form-data" class="row g-2">
                         <!-- Product fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" required
-                                placeholder="Jersey Name">
+                                placeholder="Jersey Name...">
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="category" placeholder="Category">
+                        <div class="col-md-3">
+                            <select class="form-select" name="category" id="add_category" aria-label="Category">
+                                <option value="">Select Category</option>
+                                <option>Football</option>
+                                <option>Cricket</option>
+                                <option>NPL cricket</option>
+                                <option>NSL football</option>
+                            </select>
                         </div>
                         <div class="col-md-3"><input class="form-control" name="country" placeholder="Country">
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="type" placeholder="Type"></div>
+                        <div class="col-md-3"><input class="form-control" name="quality" placeholder="Jersey Quality.."></div>
                         <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
                                 placeholder="Price"></div>
                         <div class="col-md-3"><input class="form-control" name="discount" type="number"
                                 placeholder="Discount %"></div>
                         <div class="col-12"><textarea class="form-control" name="description"
-                                placeholder="Description"></textarea></div>
+                                placeholder="Description..."></textarea></div>
                         <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
                         <div class="text-end mt-3">
                             <button type="submit" name="add_product" class="btn btn-success">Save</button>
@@ -247,7 +264,7 @@ if (isset($_GET['del'])) {
             </div>
         </div>
 
-        <!-- ================= EDIT PRODUCT MODAL ================= -->
+        <!--  EDIT PRODUCT MODAL -->
         <div class="modal fade" id="editModal">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content p-3">
@@ -258,11 +275,18 @@ if (isset($_GET['del'])) {
                         <!-- Edit fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
                                 placeholder="Jersey Name"></div>
-                        <div class="col-md-3"><input class="form-control" name="category" id="edit_category"
-                                placeholder="Category"></div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="category" id="edit_category" aria-label="Edit Category">
+                                <option value="">Select Category</option>
+                                <option>Football</option>
+                                <option>Cricket</option>
+                                <option>NPL cricket</option>
+                                <option>NSL football</option>
+                            </select>
+                        </div>
                         <div class="col-md-3"><input class="form-control" name="country" id="edit_country"
                                 placeholder="Country"></div>
-                        <div class="col-md-3"><input class="form-control" name="type" id="edit_type" placeholder="Type">
+                        <div class="col-md-3"><input class="form-control" name="quality" id="edit_quality" placeholder="Jersey Quality">
                         </div>
                         <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
                                 id="edit_price" placeholder="Price"></div>
@@ -281,7 +305,7 @@ if (isset($_GET['del'])) {
             </div>
         </div>
 
-        <!-- ================= SIZE MODAL (CUSTOMIZE SIZES) ================= -->
+        <!--  SIZE MODAL (CUSTOMIZE SIZES)-->
         <div class="modal fade" id="sizeModal">
             <div class="modal-dialog">
                 <div class="modal-content p-3">
@@ -332,17 +356,34 @@ if (isset($_GET['del'])) {
 
         let PROD = 0;
 
-        /* ================= SIZE MODAL FUNCTIONS ================= */
+        /*  SIZE MODAL FUNCTIONS */
         function openSizeModal(id, name) {
+            console.log('openSizeModal called', id, name);
             PROD = id;
             document.getElementById("sizeTitle").innerHTML = "Sizes — " + name;
+            // show a loading placeholder while fetching
+            document.getElementById("sizesList").innerHTML = "<div class='text-muted'>Loading sizes...</div>";
+
             fetch("jersies.php", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: "fetch_sizes=1&pid=" + id
             })
-                .then(r => r.text()).then(d => document.getElementById("sizesList").innerHTML = d);
-            new bootstrap.Modal(document.getElementById("sizeModal")).show();
+                .then(r => {
+                    if (!r.ok) throw new Error('Network response not ok: ' + r.status);
+                    return r.text();
+                })
+                .then(d => {
+                    document.getElementById("sizesList").innerHTML = d;
+                    // show modal after sizes are inserted
+                    new bootstrap.Modal(document.getElementById("sizeModal")).show();
+                })
+                .catch(err => {
+                    console.error('Failed to fetch sizes:', err);
+                    document.getElementById("sizesList").innerHTML = "<span class='text-danger'>Failed to load sizes</span>";
+                    // still open modal so admin can add sizes
+                    new bootstrap.Modal(document.getElementById("sizeModal")).show();
+                });
         }
 
         function saveSize() {
@@ -358,8 +399,11 @@ if (isset($_GET['del'])) {
             fetch("jersies.php", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `add_size=1&product_id=${PROD}&size=&stock=${val}`
-            });
+                body: `update_stock=1&id=${id}&stock=${val}`
+            }).then(r => r.text()).then(res => {
+                // optional: show a quick visual confirmation
+                console.log('Stock update response:', res);
+            }).catch(err => console.error('Failed to update stock:', err));
         }
 
         function deleteSize(id) {
@@ -370,7 +414,7 @@ if (isset($_GET['del'])) {
             }).then(() => location.reload());
         }
 
-        /* ================= EDIT MODAL FUNCTIONS ================= */
+        /*  EDIT MODAL FUNCTIONS  */
         function openEditModal(id) {
             // use current path to avoid accidental relative path issues
             fetch(location.pathname, {
@@ -395,9 +439,18 @@ if (isset($_GET['del'])) {
                     }
                     document.getElementById('edit_id').value = d.id;
                     document.getElementById('edit_name').value = d.j_name;
-                    document.getElementById('edit_category').value = d.category;
+                    const editCategory = document.getElementById('edit_category');
+                    if (d.category) {
+                        if (!Array.from(editCategory.options).some(o => o.value === d.category)) {
+                            const opt = new Option(d.category, d.category, true, true);
+                            editCategory.add(opt, editCategory.options[0]);
+                        }
+                        editCategory.value = d.category;
+                    } else {
+                        editCategory.value = '';
+                    }
                     document.getElementById('edit_country').value = d.country;
-                    document.getElementById('edit_type').value = d.type;
+                    document.getElementById('edit_quality').value = d.quality;
                     document.getElementById('edit_price').value = d.price;
                     document.getElementById('edit_discount').value = d.discount;
                     document.getElementById('edit_description').value = d.description;
@@ -408,6 +461,16 @@ if (isset($_GET['del'])) {
                     alert('Unable to open edit dialog. See console for details.');
                 });
         }
+
+        // Bind manage buttons (in case inline onclick was unreliable)
+        document.querySelectorAll('.btn-manage').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const pid = this.dataset.pid;
+                const name = this.dataset.name;
+                console.log('manage button clicked', pid, name);
+                openSizeModal(pid, name);
+            });
+        });
     </script>
 
 </body>

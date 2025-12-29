@@ -54,10 +54,10 @@ if ($res->num_rows) {
 <?php require('header.php'); ?>
 
 <main class="admin-content">
+  <div class="container-fluid px-4 mt-3">
+    <h3 class="mb-4">Manage Carousel Images</h3>
 
-  <h3 class="mb-4">Manage Carousel Images</h3>
-
-  <!-- Upload Section -->
+    <!-- Upload Section -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <form method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
@@ -69,7 +69,7 @@ if ($res->num_rows) {
     </div>
   </div>
 
-  <!-- Display Images Grid -->
+    <!-- Display Images Grid -->
   <div class="row">
     <?php foreach ($images as $img): ?>
       <div class="col-6 col-sm-4 col-md-3 mb-3">
@@ -83,7 +83,6 @@ if ($res->num_rows) {
       </div>
     <?php endforeach; ?>
   </div>
-
 </main>
 
 </body>

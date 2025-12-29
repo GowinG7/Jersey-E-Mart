@@ -1,5 +1,4 @@
 <?php
-// place_order.php
 session_start();
 require_once "../shared/dbconnect.php";
 
@@ -19,62 +18,105 @@ $location = trim($_POST['location']);
 $contact = trim($_POST['contact']);
 $payment_option = $_POST['payment_option'];
 $grand_total = intval($_POST['grand_total']);
+$shipping_cost = 150;     // flat rate shipping
 
 // Basic validation
-if ($name=="" || $location=="" || $contact=="" || ($payment_option != 'Cash on Delivery' && $payment_option != 'Online Payment')) {
+if (
+    $name == "" || $location == "" || $contact == "" ||
+    ($payment_option != 'Cash on Delivery' && $payment_option != 'Online Payment')
+) {
+
     $_SESSION['alert'] = "Invalid order data.";
     $_SESSION['alert_type'] = "danger";
     header("Location: order_form.php");
     exit();
 }
 
-// Begin transaction
+// Begin DB transaction
 $conn->begin_transaction();
 
 try {
-    // insert order
-    $payment_status = ($payment_option == 'Cash on Delivery') ? 'Pending' : 'Pending';
+
+    // For now, both are Pending. For Online Payment, will update after eSewa.
+    $payment_status = 'Pending';
     $order_status = 'Pending';
-    $stmt = $conn->prepare("INSERT INTO orders (user_id, name, location, grand_total, payment_option, payment_status, order_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ississs", $user_id, $name, $location, $grand_total, $payment_option, $payment_status, $order_status);
+
+    // Insert into orders table
+    $stmt = $conn->prepare("
+        INSERT INTO orders 
+        (user_id, name, location, grand_total, payment_option, payment_status, order_status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->bind_param(
+        "ississs",
+        $user_id,
+        $name,
+        $location,
+        $grand_total,
+        $payment_option,
+        $payment_status,
+        $order_status
+    );
     $stmt->execute();
     $order_id = $stmt->insert_id;
     $stmt->close();
 
-    // fetch cart items
-    $stmt = $conn->prepare("SELECT product_id, pname, category, jersey_type, quality, base_price, print_name, print_number, print_cost, quantity, final_price, shipping, image FROM cart_items WHERE user_id = ?");
+    // Fetch cart items (REAL columns)
+    $stmt = $conn->prepare("
+        SELECT product_id, pname, category, quality, base_price, print_name, print_number, 
+               print_cost, quantity, price_after_discount AS final_price, image 
+        FROM cart_items 
+        WHERE user_id = ?
+    ");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $res = $stmt->get_result();
 
-    $insert_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, pname, category, jersey_type, quality, base_price, print_name, print_number, print_cost, quantity, final_price, subtotal, shipping, product_image) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    // Prepare insert into order_items
+    $insert_item = $conn->prepare("
+        INSERT INTO order_items 
+        (order_id, product_id, pname, category, jersey_type, quality, base_price, print_name, 
+         print_number, print_cost, quantity, final_price, subtotal, shipping, product_image) 
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ");
 
     while ($it = $res->fetch_assoc()) {
-        $subtotal = (intval($it['final_price']) * intval($it['quantity'])) + intval($it['shipping']);
+
+        $qty = intval($it['quantity']);
+        $unit_price = intval($it['final_price']);
+
+        // subtotal = unit price * quantity + flat shipping
+        $subtotal = ($unit_price * $qty) + $shipping_cost;
+
+        // jersey_type does not exist → send NULL
+        $jersey_type = NULL;
+
         $insert_item->bind_param(
-            "iissssiiiidisss",
+            "iissssissiidiss",
             $order_id,
             $it['product_id'],
             $it['pname'],
             $it['category'],
-            $it['jersey_type'],
+            $jersey_type,
             $it['quality'],
             $it['base_price'],
             $it['print_name'],
             $it['print_number'],
             $it['print_cost'],
             $it['quantity'],
-            $it['final_price'],
+            $unit_price,
             $subtotal,
-            $it['shipping'],
+            $shipping_cost,
             $it['image']
         );
+
         $insert_item->execute();
     }
+
     $insert_item->close();
     $stmt->close();
 
-    // clear cart
+    // Clear cart after success
     $del = $conn->prepare("DELETE FROM cart_items WHERE user_id = ?");
     $del->bind_param("i", $user_id);
     $del->execute();
@@ -82,9 +124,8 @@ try {
 
     $conn->commit();
 
-    // if payment_option is Online Payment, you would redirect to payment gateway here.
-    // For now we treat both as order placed and redirect to thankyou page.
-    header("Location: thankyou.php?order_id=".$order_id);
+    // For online payment: After future eSewa verification, update payment_status + store transaction_id
+    header("Location: thankyou.php?order_id=" . $order_id);
     exit();
 
 } catch (Exception $e) {
@@ -94,3 +135,4 @@ try {
     header("Location: order_form.php");
     exit();
 }
+?>

@@ -16,11 +16,19 @@ if (isset($_GET['toggle'])) {
     }
 }
 
+// Delete user via GET
+if (isset($_GET['delete'])) {
+    $userId = intval($_GET['delete']);
+    $conn->query("DELETE FROM user_creden WHERE id=$userId");
+    $msg = "User deleted successfully!";
+    header("Location: users.php?msg=" . urlencode($msg) . "&status=2");
+    exit;
+}
+
 // Fetch all users
 $res = $conn->query("SELECT * FROM user_creden ORDER BY id DESC");
 $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -68,12 +76,12 @@ $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
                     <th>Security Answer</th>
                     <th>Verified</th>
                     <th>Created At</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
-                for ($i = 0; $i < count($users); $i++) {
-                    $u = $users[$i];
+                foreach ($users as $u) {
                     $btnClass = $u['is_verified'] ? 'btn-success' : 'btn-warning';
                     $btnText = $u['is_verified'] ? 'Verified' : 'Unverified';
                     echo "<tr>
@@ -90,6 +98,16 @@ $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
                             </a>
                         </td>
                         <td>{$u['created_at']}</td>
+                        <td>";
+                            if ($u['is_verified']) {
+                                echo "<a href='?delete={$u['id']}' class='btn btn-sm btn-danger btn-small'
+                                    onclick=\"return confirm('Are you sure you want to delete this user?');\">
+                                    Delete
+                                </a>";
+                            } else {
+                                echo "<span class='text-muted'></span>";
+                            }
+                        echo "</td>
                     </tr>";
                 }
                 ?>
@@ -100,7 +118,7 @@ $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
 
 <!-- Notification message -->
 <?php if (isset($_GET['msg'])): ?>
-    <div id="notifyMsg" style="background-color:<?= $_GET['status']==1 ? '#28a745' : '#ffc107' ?>">
+    <div id="notifyMsg" style="background-color:<?= $_GET['status']==1 ? '#28a745' : ($_GET['status']==0 ? '#ffc107' : '#dc3545') ?>">
         <?= htmlspecialchars($_GET['msg']) ?>
     </div>
 <?php endif; ?>
@@ -122,7 +140,6 @@ $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
         notify.style.display = 'block';
         setTimeout(() => { notify.style.display = 'none'; }, 2500);
 
-        // Remove query params so message does not reappear on refresh
         const url = new URL(window.location);
         url.searchParams.delete('msg');
         url.searchParams.delete('status');

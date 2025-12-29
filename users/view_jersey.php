@@ -113,7 +113,7 @@ if ($discount > 0) {
                 <div class="d-flex mt-3">
                     <button id="addToCartBtn" class="btn btn-danger px-4 me-3">Add to Cart</button>
                     <button class="btn btn-dark px-4" data-bs-toggle="modal"
-                        data-bs-target="#customizeModal">Customize</button>
+                        data-bs-target="#customizeModal" onclick="updatePrice()">Customize</button>
                 </div>
             </div>
         </div>
@@ -132,19 +132,11 @@ if ($discount > 0) {
                     <input type="hidden" id="finalPrice" name="final_price" value="<?php echo $displayPrice; ?>">
                     <input type="hidden" name="size" id="customSize">
                     <input type="hidden" name="quantity" id="customQty" value="1">
-                    <input type="hidden" name="type" id="customType" value="">
                     <div class="modal-body">
                         <label class="fw-semibold">Final Price:</label>
                         <h4 class="text-success fw-bold" id="priceDisplay">Rs
                             <?php echo number_format($displayPrice); ?>
                         </h4>
-
-                        <label class="form-label fw-semibold">Jersey Type:</label>
-                        <select class="form-select" id="jerseyType" name="type">
-                            <option value="">First Copy</option>
-                            <option value="Premium">Premium (+1000)</option>
-                            <option value="Replica">Replica (-700)</option>
-                        </select>
 
                         <label class="form-label fw-semibold mt-3">Name to Print:</label>
                         <input type="text" class="form-control" name="print_name">
@@ -162,39 +154,32 @@ if ($discount > 0) {
     </div>
 
     <script>
-        const basePrice = <?php echo $basePrice; ?>; // original price
-        const discount = <?php echo $discount; ?>;   // discount in %
+        const displayPrice = <?php echo $displayPrice; ?>; 
         const priceDisplay = document.getElementById("priceDisplay");
         const finalPriceInput = document.getElementById("finalPrice");
-        const typeSelect = document.getElementById("jerseyType");
         const nameInput = document.querySelector("input[name='print_name']");
         const numberInput = document.querySelector("input[name='print_number']");
         const customForm = document.getElementById("customForm");
 
         function updatePrice() {
-            let adjustedPrice = basePrice;
+            // Start with server-provided display price
+            let adjustedPrice = Number(displayPrice) || 0;
 
-            // Step 1: Apply quality adjustment first
-            if (typeSelect.value === "Premium") adjustedPrice += 1000;
-            if (typeSelect.value === "Replica") adjustedPrice -= 700;
-
-            // Step 2: Apply discount
-            if (discount > 0) adjustedPrice -= (adjustedPrice * discount / 100);
-
-            // Step 3: Add print costs
+            // Add print surcharges: +100 for name, +50 for number
             if (nameInput.value.trim() !== "") adjustedPrice += 100;
             if (numberInput.value.trim() !== "") adjustedPrice += 50;
 
-            // Step 4: Update inputs and display
             adjustedPrice = Math.round(adjustedPrice);
             finalPriceInput.value = adjustedPrice;
             priceDisplay.innerText = "Rs " + adjustedPrice;
-            document.getElementById("customType").value = typeSelect.value;
         }
 
-        typeSelect.addEventListener("change", updatePrice);
+        // Live updates when user types print name/number
         nameInput.addEventListener("input", updatePrice);
         numberInput.addEventListener("input", updatePrice);
+
+        // Initialize display
+        updatePrice();
 
         function selectSize(btn) {
             document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
@@ -230,6 +215,11 @@ if ($discount > 0) {
 
             document.getElementById("customSize").value = selectedSize;
             document.getElementById("customQty").value = selectedQty;
+           
+            let final = Number(displayPrice) || 0;
+            if (nameInput.value.trim() !== "") final += 100;
+            if (numberInput.value.trim() !== "") final += 50;
+            finalPriceInput.value = Math.round(final);
         });
     </script>
 </body>

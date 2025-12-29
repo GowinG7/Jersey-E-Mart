@@ -81,9 +81,8 @@ if (isset($_SESSION['user_id'])) {
       <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
         <li class="nav-item"><a class="nav-link me-3" href="index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="jersey.php">Jerseys</a></li>
-        <li class="nav-item"><a class="nav-link me-3" href="#">Kits</a></li>
         <li class="nav-item"><a class="nav-link me-3" href="Contact.php">Contact</a></li>
-        <li class="nav-item"><a class="nav-link me-3" href="#">About</a></li>
+        <li class="nav-item"><a class="nav-link me-3" href="about.php">About</a></li>
       </ul>
 
       <!-- Right-Side Buttons -->

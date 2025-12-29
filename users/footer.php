@@ -21,8 +21,8 @@ include_once "../shared/commonlinks.php";
                 <ul class="list-unstyled mb-lg-0">
                     <li><a href="index.php" class="text-white text-decoration-none">Home</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Jerseys</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Kits</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Contact</a></li>
+                                        <li><a href="#" class="text-white text-decoration-none">About</a></li>
                 </ul>
             </div>
 

@@ -2,7 +2,7 @@
 session_start();
 require_once "../shared/dbconnect.php";
 
-// Must login
+// yedi user login gareko chaina bhane login page ma redirect garne
 if (!isset($_SESSION['user_id'])) {
     echo "<script>alert('Please login to add items to cart.'); window.location.href='loginsignup/login.php';</script>";
     exit();
@@ -15,14 +15,10 @@ $product_id = intval($_GET['id'] ?? $_POST['product_id'] ?? 0);
 $jersey_size = trim($_GET['size'] ?? $_POST['size'] ?? '');
 $quantity = intval($_GET['qty'] ?? $_POST['quantity'] ?? 1);
 
-$quality = trim($_POST['type'] ?? '');
+$quality = trim($_POST['quality'] ?? '');
 $print_name = trim($_POST['print_name'] ?? '');
 $print_number = trim($_POST['print_number'] ?? '');
 $final_price = isset($_POST['final_price']) ? floatval($_POST['final_price']) : null;
-
-// Default quality
-if ($quality === '')
-    $quality = "first_copy";
 
 // Validation
 if (!$product_id || !$jersey_size) {
@@ -48,13 +44,6 @@ $category = $p['category'];
 $image = $p['image'];
 
 $adjusted_base_price = $base_price;
-$quality_lower = strtolower($quality);
-
-if ($quality_lower === "premium") {
-    $adjusted_base_price += 1000;
-} elseif ($quality_lower === "replica") {
-    $adjusted_base_price -= 700;
-}
 
 // Now apply discount on adjusted base price
 $price_after_discount = $adjusted_base_price;

@@ -1,5 +1,4 @@
 $(document).ready(function () {
-
   // Live validation
   $("#full_name").on("blur", function () {
     var fullName = $(this).val();
@@ -16,10 +15,10 @@ $(document).ready(function () {
 
   $("#username").on("blur", function () {
     var username = $(this).val();
-    if (!/^[a-zA-Z0-9_@]+$/.test(username)) {
+    if (!/^[a-zA-Z0-9_@]+$/.test(username) || username.length < 4) {
       $("#username_error")
         .text(
-          "Username can only contain letters, numbers, underscores, and the @ symbol."
+          "Username must have atleast 4 character and can only contain letters, numbers, underscores, and the @ symbol"
         )
         .show();
     } else {
@@ -29,10 +28,10 @@ $(document).ready(function () {
 
   $("#email").on("blur", function () {
     var email = $(this).val();
-    if (!/^[a-z0-9.]+@(gmail|yahoo|outlook)\.com$/.test(email)) {
+    if (!/^[a-z0-9.]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) {
       $("#email_error")
         .text(
-          "Email must contain only letters (a-z), numbers (0-9), and periods (.) and must end with @gmail.com, @yahoo.com, or @outlook.com."
+          "Email must contain only letters (a-z), numbers (0-9), and periods (.) before the @, and must have a valid domain."
         )
         .show();
     } else {
@@ -106,5 +105,4 @@ $(document).ready(function () {
       $("#cpass_error").hide();
     }
   });
-
 });
