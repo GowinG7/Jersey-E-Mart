@@ -83,12 +83,29 @@ if (isset($_POST['add_product'])) {
     $desc = $_POST['description'];
 
     $image = "";
+    // Validate uploaded image (optional). Allowed: jpg, jpeg, png, gif, webp. Max size 2MB.
     if (!empty($_FILES['image']['name'])) {
+        $tmp = $_FILES['image']['tmp_name'];
+        $size = $_FILES['image']['size'];
+        $err = $_FILES['image']['error'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo ? finfo_file($finfo, $tmp) : mime_content_type($tmp);
+        finfo_close($finfo);
+        $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if ($err !== UPLOAD_ERR_OK || $size > $maxSize || !in_array($mime, $allowedMimes) || !in_array($ext, $allowedExt)) {
+            header('Location: jersies.php?img_err=invalid');
+            exit;
+        }
+
         $image = time() . "_" . basename($_FILES['image']['name']);
-        move_uploaded_file($_FILES['image']['tmp_name'], "../shared/products/$image");
+        move_uploaded_file($tmp, "../shared/products/$image");
     }
 
-    $q = $conn->prepare("INSERT INTO products(j_name,category,country,type,price,discount,description,image)
+    $q = $conn->prepare("INSERT INTO products(j_name,category,country,quality,price,discount,description,image)
     VALUES(?,?,?,?,?,?,?,?)");
     $q->bind_param("ssssddss", $name, $cat, $country, $quality, $price, $discount, $desc, $image);
     $q->execute();
@@ -109,8 +126,24 @@ if (isset($_POST['edit_product'])) {
 
     $imageSQL = "";
     if (!empty($_FILES['image']['name'])) {
+        $tmp = $_FILES['image']['tmp_name'];
+        $size = $_FILES['image']['size'];
+        $err = $_FILES['image']['error'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo ? finfo_file($finfo, $tmp) : mime_content_type($tmp);
+        finfo_close($finfo);
+        $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if ($err !== UPLOAD_ERR_OK || $size > $maxSize || !in_array($mime, $allowedMimes) || !in_array($ext, $allowedExt)) {
+            header('Location: jersies.php?img_err=invalid');
+            exit;
+        }
+
         $image = time() . "_" . basename($_FILES['image']['name']);
-        move_uploaded_file($_FILES['image']['tmp_name'], "../shared/products/$image");
+        move_uploaded_file($tmp, "../shared/products/$image");
         $imageSQL = ", image='$image'";
     }
 
@@ -154,6 +187,9 @@ if (isset($_GET['del'])) {
     include_once "header.php";
     ?>
     <div class="container p-3" style="margin-top:70px;margin-left:230px;"> <!-- space for sticky header -->
+        <?php if (isset($_GET['img_err'])) { ?>
+            <div class="alert alert-danger">Invalid image upload. Allowed types: PNG, JPG, GIF, WEBP. Max size 2MB.</div>
+        <?php } ?>
         <div class="row " style="margin-right:40px;">
             <div class="d-flex justify-content-between mb-3">
                 <h3 style="font-weight:700;">Jersey Inventory</h3>
@@ -197,9 +233,9 @@ if (isset($_GET['del'])) {
                             <td><?= $p['category'] ?></td>
                             <td><?= $p['country'] ?></td>
                             <td><?= $p['quality'] ?></td>
-                            <td><?= $p['price'] ?></td>
+                            <td>Rs.<?= intval($p['price'] )?></td>
                             <td><?= $p['discount'] ?>%</td>
-                            <td class="fw-bold text-success"><?= $final ?></td>
+                            <td class="fw-bold text-success">Rs.<?= $final ?></td>
 
                             <td id="sizeCell<?= $pid ?>"> <!-- Display Sizes -->
                                 <?php
@@ -214,8 +250,10 @@ if (isset($_GET['del'])) {
 
                             <td>
                                 <!-- BUTTONS: Size Modal (Customize), Edit Modal, Delete -->
-                                <button type="button" class="btn btn-primary btn-sm btn-manage" data-pid="<?= $pid ?>" data-name='<?= htmlspecialchars($p['j_name'], ENT_QUOTES) ?>'>Manage</button>
-                                <button type="button" class="btn btn-warning btn-sm" onclick="openEditModal(<?= $pid ?>)">Edit</button>
+                                <button type="button" class="btn btn-primary btn-sm btn-manage" data-pid="<?= $pid ?>"
+                                    data-name='<?= htmlspecialchars($p['j_name'], ENT_QUOTES) ?>'>Manage</button>
+                                <button type="button" class="btn btn-warning btn-sm"
+                                    onclick="openEditModal(<?= $pid ?>)">Edit</button>
                                 <a href="?del=<?= $pid ?>" class="btn btn-danger btn-sm"
                                     onclick="return confirm('Remove Jersey?')">Delete</a>
                             </td>
@@ -231,10 +269,10 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Add Jersey</h5>
                     <hr>
-                    <form method="POST" enctype="multipart/form-data" class="row g-2">
+                    <form method="POST" enctype="multipart/form-data" class="row g-2" onsubmit="return validateJerseyForm();">
                         <!-- Product fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" required
-                                placeholder="Jersey Name...">
+                                placeholder="Enter Jersey Name...">
                         </div>
                         <div class="col-md-3">
                             <select class="form-select" name="category" id="add_category" aria-label="Category">
@@ -245,16 +283,27 @@ if (isset($_GET['del'])) {
                                 <option>NSL football</option>
                             </select>
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="country" placeholder="Country">
+                        <div class="col-md-3"><input class="form-control" name="country"
+                                placeholder="Enter the name of country this jersey is..">
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="quality" placeholder="Jersey Quality.."></div>
-                        <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
-                                placeholder="Price"></div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="quality" id="add_quality" aria-label="Quality">
+                                <option value="">Select Quality</option>
+                                <option>Premium</option>
+                                <option>First Copy</option>
+                                <option>replicas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3"><input class="form-control" name="price" type="number"
+                                placeholder="Enter price in Rs."></div>
                         <div class="col-md-3"><input class="form-control" name="discount" type="number"
-                                placeholder="Discount %"></div>
+                                placeholder="Enter discount in %"></div>
                         <div class="col-12"><textarea class="form-control" name="description"
-                                placeholder="Description..."></textarea></div>
-                        <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+                                placeholder="Write description..."></textarea></div>
+                        <div class="col-md-6">
+                            <input type="file" name="image" class="form-control"
+                                accept="image/jpg,image/jpeg,image/png,image/gif,image/webp">
+                        </div>
                         <div class="text-end mt-3">
                             <button type="submit" name="add_product" class="btn btn-success">Save</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -270,11 +319,11 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Edit Jersey</h5>
                     <hr>
-                    <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm">
+                    <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm" onsubmit="return validateJerseyForm();">
                         <input type="hidden" name="edit_id" id="edit_id">
                         <!-- Edit fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
-                                placeholder="Jersey Name"></div>
+                                placeholder="Enter Jersey Name.."></div>
                         <div class="col-md-3">
                             <select class="form-select" name="category" id="edit_category" aria-label="Edit Category">
                                 <option value="">Select Category</option>
@@ -285,16 +334,25 @@ if (isset($_GET['del'])) {
                             </select>
                         </div>
                         <div class="col-md-3"><input class="form-control" name="country" id="edit_country"
-                                placeholder="Country"></div>
-                        <div class="col-md-3"><input class="form-control" name="quality" id="edit_quality" placeholder="Jersey Quality">
+                                placeholder="Enter the name of country this jersey is.."></div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="quality" id="edit_quality" aria-label="Edit Quality">
+                                <option value="">Select Quality</option>
+                                <option>Premium</option>
+                                <option>First Copy</option>
+                                <option>replicas</option>
+                            </select>
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="price" type="number" step="any"
-                                id="edit_price" placeholder="Price"></div>
+                        <div class="col-md-3"><input class="form-control" name="price" type="number" id="edit_price"
+                                placeholder="Enter price in Rs."></div>
                         <div class="col-md-3"><input class="form-control" name="discount" type="number"
-                                id="edit_discount" placeholder="Discount %"></div>
+                                id="edit_discount" placeholder="Enter discount in %"></div>
                         <div class="col-12"><textarea class="form-control" name="description" id="edit_description"
-                                placeholder="Description"></textarea></div>
-                        <div class="col-md-6"><input type="file" name="image" class="form-control"></div>
+                                placeholder="Write description..."></textarea></div>
+                        <div class="col-md-6">
+                            <input type="file" name="image" class="form-control"
+                                accept="image/jpg,image/jpeg,image/png,image/gif,image/webp">
+                        </div>
                         <div class="text-end mt-3">
                             <button name="edit_product" class="btn btn-success">Update</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -331,148 +389,9 @@ if (isset($_GET['del'])) {
 
 
     <script>
-        // For search functionality
-        const searchBox = document.getElementById('searchBox');
-        const table = document.querySelector('table tbody');
 
-        searchBox.addEventListener('keyup', function () {
-            const filter = this.value.toLowerCase();
-            const rows = table.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const name = row.cells[1].textContent.toLowerCase(); // Name column
-                const category = row.cells[2].textContent.toLowerCase(); // Category column
-                const country = row.cells[3].textContent.toLowerCase(); // Country column
-
-                if (name.includes(filter) || category.includes(filter) || country.includes(filter)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-
-
-
-        let PROD = 0;
-
-        /*  SIZE MODAL FUNCTIONS */
-        function openSizeModal(id, name) {
-            console.log('openSizeModal called', id, name);
-            PROD = id;
-            document.getElementById("sizeTitle").innerHTML = "Sizes — " + name;
-            // show a loading placeholder while fetching
-            document.getElementById("sizesList").innerHTML = "<div class='text-muted'>Loading sizes...</div>";
-
-            fetch("jersies.php", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: "fetch_sizes=1&pid=" + id
-            })
-                .then(r => {
-                    if (!r.ok) throw new Error('Network response not ok: ' + r.status);
-                    return r.text();
-                })
-                .then(d => {
-                    document.getElementById("sizesList").innerHTML = d;
-                    // show modal after sizes are inserted
-                    new bootstrap.Modal(document.getElementById("sizeModal")).show();
-                })
-                .catch(err => {
-                    console.error('Failed to fetch sizes:', err);
-                    document.getElementById("sizesList").innerHTML = "<span class='text-danger'>Failed to load sizes</span>";
-                    // still open modal so admin can add sizes
-                    new bootstrap.Modal(document.getElementById("sizeModal")).show();
-                });
-        }
-
-        function saveSize() {
-            fetch("jersies.php", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `add_size=1&product_id=${PROD}&size=${sizeSelect.value}&stock=${stockInput.value}`
-            })
-                .then(() => location.reload());
-        }
-
-        function updateStock(id, val) {
-            fetch("jersies.php", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `update_stock=1&id=${id}&stock=${val}`
-            }).then(r => r.text()).then(res => {
-                // optional: show a quick visual confirmation
-                console.log('Stock update response:', res);
-            }).catch(err => console.error('Failed to update stock:', err));
-        }
-
-        function deleteSize(id) {
-            fetch("jersies.php", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `del_size=${id}`
-            }).then(() => location.reload());
-        }
-
-        /*  EDIT MODAL FUNCTIONS  */
-        function openEditModal(id) {
-            // use current path to avoid accidental relative path issues
-            fetch(location.pathname, {
-                method: "POST",
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `fetch_product=1&id=${id}`
-            })
-                .then(async (r) => {
-                    if (!r.ok) throw new Error('Network response not ok: ' + r.status);
-                    const ct = r.headers.get('Content-Type') || '';
-                    if (ct.includes('application/json')) return r.json();
-                    // if not JSON, log full response for debugging
-                    const text = await r.text();
-                    console.error('Expected JSON but got:', text);
-                    throw new Error('Invalid server response');
-                })
-                .then(d => {
-                    if (!d || !d.id) {
-                        console.error('Product data missing:', d);
-                        alert('Failed to load product data');
-                        return;
-                    }
-                    document.getElementById('edit_id').value = d.id;
-                    document.getElementById('edit_name').value = d.j_name;
-                    const editCategory = document.getElementById('edit_category');
-                    if (d.category) {
-                        if (!Array.from(editCategory.options).some(o => o.value === d.category)) {
-                            const opt = new Option(d.category, d.category, true, true);
-                            editCategory.add(opt, editCategory.options[0]);
-                        }
-                        editCategory.value = d.category;
-                    } else {
-                        editCategory.value = '';
-                    }
-                    document.getElementById('edit_country').value = d.country;
-                    document.getElementById('edit_quality').value = d.quality;
-                    document.getElementById('edit_price').value = d.price;
-                    document.getElementById('edit_discount').value = d.discount;
-                    document.getElementById('edit_description').value = d.description;
-                    new bootstrap.Modal(document.getElementById('editModal')).show();
-                })
-                .catch(err => {
-                    console.error('Failed fetching product:', err);
-                    alert('Unable to open edit dialog. See console for details.');
-                });
-        }
-
-        // Bind manage buttons (in case inline onclick was unreliable)
-        document.querySelectorAll('.btn-manage').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const pid = this.dataset.pid;
-                const name = this.dataset.name;
-                console.log('manage button clicked', pid, name);
-                openSizeModal(pid, name);
-            });
-        });
     </script>
-
+<script src="js/jersies.js"></script>
 </body>
 
 </html>
