@@ -15,7 +15,7 @@ $product_id = intval($_GET['id'] ?? $_POST['product_id'] ?? 0);
 $jersey_size = trim($_GET['size'] ?? $_POST['size'] ?? '');
 $quantity = intval($_GET['qty'] ?? $_POST['quantity'] ?? 1);
 
-$quality = trim($_POST['quality'] ?? '');
+$quality = trim($_GET['quality'] ?? $_POST['quality'] ?? '');
 $print_name = trim($_POST['print_name'] ?? '');
 $print_number = trim($_POST['print_number'] ?? '');
 $final_price = isset($_POST['final_price']) ? floatval($_POST['final_price']) : null;
@@ -31,7 +31,7 @@ if ($quantity < 1)
     $quantity = 1;
 
 // Fetch product info
-$stmt = $conn->prepare("SELECT j_name, price, discount, category, image FROM products WHERE id=? LIMIT 1");
+$stmt = $conn->prepare("SELECT j_name, price, discount, category, image, quality FROM products WHERE id=? LIMIT 1");
 $stmt->bind_param("i", $product_id);
 $stmt->execute();
 $p = $stmt->get_result()->fetch_assoc();
@@ -42,6 +42,11 @@ $base_price = floatval($p['price']); // original product price
 $discount = floatval($p['discount']);
 $category = $p['category'];
 $image = $p['image'];
+
+// If quality not provided by user, default to product's quality from products table
+if ($quality === '') {
+    $quality = $p['quality'] ?? '';
+}
 
 $adjusted_base_price = $base_price;
 

@@ -133,10 +133,10 @@ $result = mysqli_query($conn, $query);
                         <td><?php echo $row['jersey_size']; ?></td>
                         <td><?php echo $row['quality']; ?></td>
                         <td>Rs. <?php echo number_format(intval($row['base_price'])); ?></td>
-                        <td><?php echo $row['print_name'] ?: '-'; ?></td>
-                        <td><?php echo $row['print_number'] ?: '-'; ?></td>
-                        <td><?php echo $row['print_cost'] > 0 ? 'Rs. ' . number_format(intval($row['print_cost'])) : '-'; ?></td>
-                        <td><?php echo (!empty($row['discount']) && intval($row['discount']) > 0) ? number_format(floatval($row['discount'])) . '%' : '-'; ?></td>
+                        <td><?php echo $row['print_name'] ?: ''; ?></td>
+                        <td><?php echo $row['print_number'] ?: ''; ?></td>
+                        <td><?php echo $row['print_cost'] > 0 ? 'Rs. ' . number_format(intval($row['print_cost'])) : ''; ?></td>
+                        <td><?php echo (!empty($row['discount']) && intval($row['discount']) > 0) ? number_format(floatval($row['discount'])) . '%' : 'not available'; ?></td>
                         <td>
                             <form method="POST" action="displaycart.php">
                                 <input type="number" name="quantity" value="<?php echo $row['quantity']; ?>" min="1">
