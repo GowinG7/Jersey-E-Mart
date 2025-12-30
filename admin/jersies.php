@@ -141,9 +141,29 @@ if (isset($_POST['edit_product'])) {
             header('Location: jersies.php?img_err=invalid');
             exit;
         }
+        //euta problem aathiyo admin panel bata chaie image delete bayo tara admin>shared>products folder bata delete bayeko thiyena so this
+        // get old image name so we can delete it after successful upload
+        $resImg = $conn->query("SELECT image FROM products WHERE id=" . (int) $id);
+        $oldImage = "";
+        if ($resImg && $rimg = $resImg->fetch_assoc()) {
+            $oldImage = $rimg['image'];
+        }
 
         $image = time() . "_" . basename($_FILES['image']['name']);
-        move_uploaded_file($tmp, "../shared/products/$image");
+        $dst = __DIR__ . "/../shared/products/" . $image;
+        if (!move_uploaded_file($tmp, $dst)) {
+            header('Location: jersies.php?img_err=invalid');
+            exit;
+        }
+
+        // remove old image file if present
+        if (!empty($oldImage)) {
+            $oldPath = __DIR__ . "/../shared/products/" . $oldImage;
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
         $imageSQL = ", image='$image'";
     }
 
@@ -155,7 +175,18 @@ if (isset($_POST['edit_product'])) {
 
 /*  DELETE PRODUCT  */
 if (isset($_GET['del'])) {
-    $conn->query("DELETE FROM products WHERE id=" . $_GET['del']);
+    $id = (int) $_GET['del'];
+    // fetch image filename and unlink file if exists
+    $res = $conn->query("SELECT image FROM products WHERE id=$id");
+    if ($res && $row = $res->fetch_assoc()) {
+        if (!empty($row['image'])) {
+            $imgPath = __DIR__ . "/../shared/products/" . $row['image'];
+            if (file_exists($imgPath) && is_file($imgPath)) {
+                @unlink($imgPath);
+            }
+        }
+    }
+    $conn->query("DELETE FROM products WHERE id=$id");
     header("Location: jersies.php");
     exit;
 }
@@ -233,7 +264,7 @@ if (isset($_GET['del'])) {
                             <td><?= $p['category'] ?></td>
                             <td><?= $p['country'] ?></td>
                             <td><?= $p['quality'] ?></td>
-                            <td>Rs.<?= intval($p['price'] )?></td>
+                            <td>Rs.<?= intval($p['price']) ?></td>
                             <td><?= $p['discount'] ?>%</td>
                             <td class="fw-bold text-success">Rs.<?= $final ?></td>
 
@@ -269,7 +300,8 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Add Jersey</h5>
                     <hr>
-                    <form method="POST" enctype="multipart/form-data" class="row g-2" onsubmit="return validateJerseyForm();">
+                    <form method="POST" enctype="multipart/form-data" class="row g-2"
+                        onsubmit="return validateJerseyForm();">
                         <!-- Product fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" required
                                 placeholder="Enter Jersey Name...">
@@ -319,7 +351,8 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Edit Jersey</h5>
                     <hr>
-                    <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm" onsubmit="return validateJerseyForm();">
+                    <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm"
+                        onsubmit="return validateJerseyForm();">
                         <input type="hidden" name="edit_id" id="edit_id">
                         <!-- Edit fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
@@ -391,7 +424,7 @@ if (isset($_GET['del'])) {
     <script>
 
     </script>
-<script src="js/jersies.js"></script>
+    <script src="js/jersies.js"></script>
 </body>
 
 </html>
