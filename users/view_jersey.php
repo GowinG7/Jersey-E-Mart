@@ -96,7 +96,15 @@ if ($discount > 0) {
                         while ($s = mysqli_fetch_assoc($sizes)) {
                             $size = strtoupper($s['size']);
                             $stock = $s['stock'];
-                            echo "<button type='button' class='size-btn' data-size='$size' onclick='selectSize(this)'>$size • In stock: $stock</button>";
+                            echo "
+                                <button type='button' class='size-btn' 
+                                    data-size='$size' 
+                                    data-stock='$stock'
+                                    onclick='selectSize(this)'>
+                                    $size • In stock: $stock
+                                </button>
+                                ";
+
                         }
                     } else {
                         echo "<span class='text-danger'>No sizes available</span>";
@@ -112,8 +120,8 @@ if ($discount > 0) {
 
                 <div class="d-flex mt-3">
                     <button id="addToCartBtn" class="btn btn-danger px-4 me-3">Add to Cart</button>
-                    <button class="btn btn-dark px-4" data-bs-toggle="modal"
-                        data-bs-target="#customizeModal" onclick="updatePrice()">Customize</button>
+                    <button class="btn btn-dark px-4" data-bs-toggle="modal" data-bs-target="#customizeModal"
+                        onclick="updatePrice()">Customize</button>
                 </div>
             </div>
         </div>
@@ -154,7 +162,10 @@ if ($discount > 0) {
     </div>
 
     <script>
-        const displayPrice = <?php echo $displayPrice; ?>; 
+        let selectedStock = 0;
+        const qtyInput = document.getElementById("qty");
+
+        const displayPrice = <?php echo $displayPrice; ?>;
         const priceDisplay = document.getElementById("priceDisplay");
         const finalPriceInput = document.getElementById("finalPrice");
         const nameInput = document.querySelector("input[name='print_name']");
@@ -184,13 +195,25 @@ if ($discount > 0) {
         function selectSize(btn) {
             document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            document.getElementById("sizeInput").value = btn.dataset.size;
+
+            const size = btn.dataset.size;
+            const stock = parseInt(btn.dataset.stock, 10);
+
+            document.getElementById("sizeInput").value = size;
             document.getElementById("sizeAlert").style.display = "none";
+
+            // Store stock
+            selectedStock = stock;
+
+            // Reset quantity safely
+            qtyInput.value = 1;
+            qtyInput.min = 1;
+            qtyInput.max = stock;
         }
 
         document.getElementById("addToCartBtn").addEventListener("click", function () {
             const size = document.getElementById("sizeInput").value;
-            const qty = document.getElementById("qty").value || 1;
+            const qty = parseInt(qtyInput.value, 10) || 1;
 
             if (!size) {
                 const alertDiv = document.getElementById("sizeAlert");
@@ -199,8 +222,15 @@ if ($discount > 0) {
                 return;
             }
 
+            if (qty > selectedStock) {
+                alert("Requested quantity exceeds available stock.");
+                return;
+            }
+
             window.location.href = `cart.php?id=<?php echo $id; ?>&size=${size}&qty=${qty}`;
         });
+
+
 
         // Customize modal form
         customForm.addEventListener("submit", function (e) {
@@ -213,14 +243,37 @@ if ($discount > 0) {
                 return false;
             }
 
+            if (selectedQty > selectedStock) {
+                alert("Requested quantity exceeds available stock.");
+                e.preventDefault();
+                return false;
+            }
+
+
             document.getElementById("customSize").value = selectedSize;
             document.getElementById("customQty").value = selectedQty;
-           
+
             let final = Number(displayPrice) || 0;
             if (nameInput.value.trim() !== "") final += 100;
             if (numberInput.value.trim() !== "") final += 50;
             finalPriceInput.value = Math.round(final);
         });
+
+        qtyInput.addEventListener("input", function () {
+            let val = parseInt(this.value, 10);
+
+            if (!selectedStock) {
+                this.value = 1;
+                return;
+            }
+
+            if (val < 1) this.value = 1;
+            if (val > selectedStock) {
+                alert("Only " + selectedStock + " item(s) available in stock.");
+                this.value = selectedStock;
+            }
+        });
+
     </script>
 </body>
 
