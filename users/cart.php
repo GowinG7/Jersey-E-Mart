@@ -81,10 +81,31 @@ $check->bind_param("iissss", $user_id, $product_id, $jersey_size, $quality, $pri
 $check->execute();
 $res = $check->get_result();
 
+// Check available stock (soft check)
+$stockStmt = $conn->prepare("
+    SELECT stock FROM product_sizes 
+    WHERE product_id=? AND size=? LIMIT 1
+");
+$stockStmt->bind_param("is", $product_id, $jersey_size);
+$stockStmt->execute();
+$stockRow = $stockStmt->get_result()->fetch_assoc();
+$stockStmt->close();
+
+$available_stock = intval($stockRow['stock'] ?? 0);
+
+if ($available_stock <= 0) {
+    $_SESSION['alert'] = "Selected size is out of stock.";
+    $_SESSION['alert_type'] = "danger";
+    header("Location: view_jersey.php?id=" . $product_id);
+    exit();
+}
+
+
 if ($res->num_rows > 0) {
     // Update quantity
     $row = $res->fetch_assoc();
-    $new_q = $row['quantity'] + $quantity;
+    $new_q = min($row['quantity'] + $quantity, $available_stock);
+
     $u = $conn->prepare("UPDATE cart_items SET quantity=? WHERE id=?");
     $u->bind_param("ii", $new_q, $row['id']);
     $u->execute();

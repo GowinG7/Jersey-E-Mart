@@ -91,8 +91,17 @@ if ($discount > 0) {
                 <h6 class="fw-semibold">Available Sizes</h6>
                 <div class="d-flex flex-wrap mb-3">
                     <?php
-                    $sizes = mysqli_query($conn, "SELECT size,stock FROM product_sizes WHERE product_id=$id AND stock>0 ORDER BY size ASC");
-                    if (mysqli_num_rows($sizes) > 0) {
+                    $sizes = mysqli_query($conn, "
+                        SELECT size, stock 
+                        FROM product_sizes 
+                        WHERE product_id = $id AND stock > 0
+                        ORDER BY size ASC
+                    ");
+
+                    $hasSizes = ($sizes && mysqli_num_rows($sizes) > 0);
+
+                    if ($hasSizes) {
+
                         while ($s = mysqli_fetch_assoc($sizes)) {
                             $size = strtoupper($s['size']);
                             $stock = $s['stock'];
@@ -107,7 +116,7 @@ if ($discount > 0) {
 
                         }
                     } else {
-                        echo "<span class='text-danger'>No sizes available</span>";
+                        echo "<span class='text-danger fw-semibold'>Out of stock</span>";
                     }
                     ?>
                 </div>
@@ -119,10 +128,15 @@ if ($discount > 0) {
                 <input type="number" id="qty" class="form-control qty-box mb-3" value="1" min="1">
 
                 <div class="d-flex mt-3">
-                    <button id="addToCartBtn" class="btn btn-danger px-4 me-3">Add to Cart</button>
+                    <button id="addToCartBtn" class="btn btn-danger px-4 me-3" <?php echo !$hasSizes ? 'disabled' : ''; ?>>
+                        Add to Cart
+                    </button>
                     <button class="btn btn-dark px-4" data-bs-toggle="modal" data-bs-target="#customizeModal"
-                        onclick="updatePrice()">Customize</button>
+                        onclick="updatePrice()" <?php echo !$hasSizes ? 'disabled' : ''; ?>>
+                        Customize
+                    </button>
                 </div>
+
             </div>
         </div>
     </div>
@@ -163,6 +177,14 @@ if ($discount > 0) {
 
     <script>
         let selectedStock = 0;
+
+        const hasSizes = <?php echo $hasSizes ? 'true' : 'false'; ?>;
+
+        if (!hasSizes) {
+            document.getElementById("addToCartBtn").disabled = true;
+        }
+
+
         const qtyInput = document.getElementById("qty");
 
         const displayPrice = <?php echo $displayPrice; ?>;
@@ -275,6 +297,7 @@ if ($discount > 0) {
         });
 
     </script>
+
 </body>
 
 </html>

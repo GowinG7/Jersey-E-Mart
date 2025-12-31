@@ -60,9 +60,8 @@ $result = mysqli_query($conn, $query);
         }
 
         .btn {
-            padding: 4px 4px;
-            margin-top: 4px;
-            font-size: 17px;
+            padding: 6px 10px;
+            font-size: 16px;
             background-color: #45a049;
             color: white;
             border: none;
@@ -76,11 +75,7 @@ $result = mysqli_query($conn, $query);
 
         .btn-remove {
             background-color: red;
-            color: white;
-            border: none;
             padding: 8px 14px;
-            cursor: pointer;
-            transition: 0.2s;
         }
 
         .btn-remove:hover {
@@ -93,10 +88,14 @@ $result = mysqli_query($conn, $query);
     <div class="cart-container">
         <h2>Shopping Cart</h2>
 
-        <?php if (mysqli_num_rows($result) > 0):
+        <?php if (mysqli_num_rows($result) > 0): ?>
+
+            <?php
             $grand_total = 0;
             $shipping_cost = 150;
+            $has_out_of_stock = false;
             ?>
+
             <table>
                 <tr>
                     <th>Image</th>
@@ -110,75 +109,112 @@ $result = mysqli_query($conn, $query);
                     <th>Print Cost</th>
                     <th>Discount</th>
                     <th>Quantity</th>
-                    <th>Price after discount</th>
+                    <th>Total</th>
+                    <th>Status</th>
                     <th>Action</th>
                 </tr>
 
-                <?php while ($row = mysqli_fetch_assoc($result)):
+                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+
+                    <?php
                     $price_after_discount = floatval($row['price_after_discount']);
                     $quantity = intval($row['quantity']);
                     $total = round($price_after_discount * $quantity, 2);
                     $grand_total += $total;
 
-                    // Get stock for this product & size
+                    // Fetch stock for product & size
                     $stock = 0;
-                    $res = mysqli_query($conn, "SELECT stock FROM product_sizes WHERE product_id={$row['product_id']} AND size='{$row['jersey_size']}' LIMIT 1");
+                    $res = mysqli_query(
+                        $conn,
+                        "SELECT stock FROM product_sizes 
+                        WHERE product_id = {$row['product_id']} 
+                        AND size = '{$row['jersey_size']}' 
+                        LIMIT 1"
+                    );
+
                     if ($res && mysqli_num_rows($res) > 0) {
                         $r = mysqli_fetch_assoc($res);
                         $stock = intval($r['stock']);
                     }
+
+                    if ($stock == 0) {
+                        $has_out_of_stock = true;
+                    }
                     ?>
+
                     <tr>
                         <td><img src="../shared/products/<?php echo $row['image']; ?>" class="img-thumb"></td>
                         <td><?php echo $row['pname']; ?></td>
                         <td><?php echo $row['category']; ?></td>
                         <td><?php echo $row['jersey_size']; ?></td>
                         <td><?php echo $row['quality']; ?></td>
-                        <td>Rs. <?php echo number_format(intval($row['base_price'])); ?></td>
-                        <td><?php echo $row['print_name'] ?: ''; ?></td>
-                        <td><?php echo $row['print_number'] ?: ''; ?></td>
-                        <td><?php echo $row['print_cost'] > 0 ? 'Rs. ' . number_format(intval($row['print_cost'])) : ''; ?></td>
-                        <td><?php echo (!empty($row['discount']) && intval($row['discount']) > 0) ? number_format(floatval($row['discount'])) . '%' : 'not available'; ?>
-                        </td>
+                        <td>Rs. <?php echo number_format($row['base_price']); ?></td>
+                        <td><?php echo $row['print_name']; ?></td>
+                        <td><?php echo $row['print_number']; ?></td>
+                        <td><?php echo $row['print_cost'] > 0 ? 'Rs. ' . $row['print_cost'] : ''; ?></td>
+                        <td><?php echo $row['discount'] ? $row['discount'] . '%' : ''; ?></td>
 
                         <td>
                             <form method="POST" action="update.php">
                                 <input type="number" name="qty[<?php echo $row['id']; ?>]" value="<?php echo $quantity; ?>"
                                     min="1" max="<?php echo $stock; ?>">
-                                <button type="submit" name="update_cart" class="btn">Update</button>
+                                <button type="submit" name="update_cart" class="btn" <?php echo $stock == 0 ? 'disabled' : ''; ?>>
+                                    Update
+                                </button>
                             </form>
                         </td>
 
-                        <td>Rs. <?php echo number_format(intval($total)); ?></td>
+                        <td>Rs. <?php echo number_format($total); ?></td>
+
+                        <td>
+                            <?php if ($stock == 0): ?>
+                                <span style="color:red;font-weight:bold;">Out of stock </span>
+                                <span style="color:green;font-weight:semi-bold;"> (contact admin) </span>
+
+
+                            <?php else: ?>
+                                <span style="color:green;">Available</span>
+                            <?php endif; ?>
+                        </td>
+
                         <td>
                             <a href="remove.php?pid=<?php echo $row['product_id']; ?>&quality=<?php echo $row['quality']; ?>&size=<?php echo $row['jersey_size']; ?>"
-                                class="btn btn-remove" onclick="return confirm('Are you sure to remove this item from cart?');">
+                                class="btn btn-remove" onclick="return confirm('Remove this item from cart?');">
                                 Remove
                             </a>
                         </td>
                     </tr>
+
                 <?php endwhile; ?>
 
                 <tr>
-                    <td colspan="11"><b>Shipping</b></td>
-                    <td colspan="2">Rs. <?php echo number_format(intval($shipping_cost)); ?></td>
+                    <td colspan="12"><b>Shipping</b></td>
+                    <td colspan="2">Rs. <?php echo number_format($shipping_cost); ?></td>
                 </tr>
+
                 <?php $grand_total += $shipping_cost; ?>
+
                 <tr style="color:green;">
-                    <td colspan="11"><b>Grand Total</b></td>
-                    <td colspan="2"><b>Rs. <?php echo number_format(intval($grand_total)); ?></b></td>
+                    <td colspan="12"><b>Grand Total</b></td>
+                    <td colspan="2"><b>Rs. <?php echo number_format($grand_total); ?></b></td>
                 </tr>
+
             </table>
 
             <br>
+
             <form method="POST" action="order_form.php">
-                <button type="submit" name="order" class="btn" style="background-color:teal;">Order Now</button>
+                <button type="submit" name="order" class="btn" style="background-color:teal;" <?php echo $has_out_of_stock ? 'disabled' : ''; ?>>
+                    Order Now
+                </button>
             </form>
+
             <a href="jersey.php" class="btn">Continue Shopping</a>
 
         <?php else: ?>
             <p>Your cart is empty. <a href="jersey.php">Start Shopping</a></p>
         <?php endif; ?>
+
     </div>
 </body>
 

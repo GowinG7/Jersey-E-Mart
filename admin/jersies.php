@@ -246,7 +246,7 @@ if (isset($_GET['del'])) {
                         <th>Price</th>
                         <th>Discount</th>
                         <th>Final</th>
-                        <th>Sizes</th>
+                        <th>Sizes & Stock</th>
                         <th width="200">Action</th>
                     </tr>
                 </thead>
