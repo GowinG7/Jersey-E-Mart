@@ -3,7 +3,7 @@ include_once "../shared/commonlinks.php";
 ?>
 
 <!-- Footer Section -->
-<footer class="text-center text-lg-start mt-5" style="background-color: rgba(71, 145, 137, 1);">
+<footer class="text-center text-lg-start" style="background-color: rgba(71, 145, 137, 1);">
     <div class="container-fluid pt-4 pb-2 px-3 ">
         <div class="row">
             <!-- About Section -->
@@ -22,7 +22,7 @@ include_once "../shared/commonlinks.php";
                     <li><a href="index.php" class="text-white text-decoration-none">Home</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Jerseys</a></li>
                     <li><a href="#" class="text-white text-decoration-none">Contact</a></li>
-                                        <li><a href="#" class="text-white text-decoration-none">About</a></li>
+                    <li><a href="#" class="text-white text-decoration-none">About</a></li>
                 </ul>
             </div>
 
@@ -83,5 +83,21 @@ include_once "../shared/commonlinks.php";
     p.addtext:hover {
         color: #FBF3D1 !important;
         cursor: pointer;
+    }
+
+    html,
+    body {
+        height: 100%;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    /* Make footer sit at the bottom in a flex layout */
+    footer {
+        margin-top: auto;
     }
 </style>
