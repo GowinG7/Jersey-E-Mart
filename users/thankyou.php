@@ -62,8 +62,8 @@ $stmt->close();
     }
 
     .product-img {
-      width: 90px;
-      height: 90px;
+      width: 120px;
+      height: 150px;
       object-fit: cover;
       border-radius: 8px;
     }
@@ -128,8 +128,7 @@ $stmt->close();
             <p><span class="label">Quality:</span> <?php echo htmlspecialchars($it['quality']); ?></p>
             <p><span class="label">Quantity:</span> <?php echo intval($it['quantity']); ?></p>
             <p><span class="label">Rate:</span> Rs <?php echo number_format($it['final_price']); ?></p>
-            <p><span class="label">Shipping:</span> Rs <?php echo number_format($it['shipping']); ?></p>
-
+            
             <p style="font-weight:bold;">
               Subtotal: Rs <?php echo number_format($it['subtotal']); ?>
             </p>
@@ -138,6 +137,8 @@ $stmt->close();
       <?php endforeach; ?>
 
       <div class="total-box">
+        <p><span class="label">Shipping cost:</span> Rs <?php echo number_format($it['shipping']); ?></p>
+
         Grand Total: Rs <?php echo number_format($order['grand_total']); ?>
       </div>
 
