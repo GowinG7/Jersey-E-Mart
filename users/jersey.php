@@ -1,7 +1,6 @@
 <?php
 session_start();
 include("header.php");
-
 require_once '../shared/dbconnect.php';
 include_once '../shared/commonlinks.php';
 ?>
@@ -13,13 +12,14 @@ include_once '../shared/commonlinks.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jersey Page</title>
-
     <style>
         body {
             background-color: #e0f4f2;
             color: #2d5d58;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
         }
+
 
         h1,
         h3 {
@@ -84,8 +84,8 @@ include_once '../shared/commonlinks.php';
         }
 
         .section-title {
-            margin-top: 60px;
-            margin-bottom: 30px;
+            margin-top: 30px;
+            margin-bottom: 18px;
             font-weight: 700;
         }
 
@@ -98,23 +98,18 @@ include_once '../shared/commonlinks.php';
             font-size: 0.9rem;
         }
 
-
         .discount-badge {
             position: absolute;
             top: 10px;
             right: 10px;
             font-size: 15px;
             z-index: 5;
-            /* stays above hover shadow */
             box-shadow: none !important;
-            /* never gets shadow */
             filter: brightness(1.15);
-            /* keeps pop effect even on hover */
         }
 
         .card:hover .discount-badge {
             box-shadow: none !important;
-            /* ensures hover won't affect it */
         }
     </style>
 </head>
@@ -124,45 +119,32 @@ include_once '../shared/commonlinks.php';
 
     <h2 class="text-center section-title animate__animated" style="color:rgb(155,125,170,1);">Explore our Premium
         Products</h2>
-    <!-- for search bar -->
+
+    <!-- Search Bar -->
     <div class="container mt-3">
         <div class="row justify-content-center">
-            <div class="col-sm-8 col-md-10 col-lg-12">
-                <form class="d-flex justify-content-center mx-auto" action="#" method="GET" style="max-width: 700px;">
-                    <!-- Dropdown for Jersey Type -->
-                    <!-- <select id="jerseyType" name="type" class="form-select me-2" style="max-width: 180px;">
-                        <option value="">Choose</option>
-                        <option value="national-football">Nepal National Football</option>
-                        <option value="national-cricket">Nepal National Cricket</option>
-                        <option value="npl">NPL Jersey</option>
-                    </select> -->
-
-                    <!-- Search Input -->
-                    <input id="searchInput" class="form-control me-2" type="search" name="query"
-                        placeholder="Search jersey..." aria-label="Search">
-
-                    <!-- Submit Button -->
-                    <button class="btn btn-primary" type="submit">Search</button>
-                </form>
+            <div class="col-sm-3 col-md-5 col-lg-6">
+                <input id="searchInput" class="form-control me-2" type="search" placeholder="Search jersey..."
+                    oninput="liveSearch(this.value)">
             </div>
         </div>
     </div>
 
+    <!-- Live Search Result Container -->
+    <div class="container my-3">
+        <div class="row" id="searchResult"></div>
+    </div>
 
-    <div class="container my-5">
+    <div class="container my-3" id="defaultProducts">
 
-        <!-- Nepal Football Jerseys -->
+        <!-- Football Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image,quality, price,discount 
-                         FROM products 
-                         WHERE category = 'football' 
-                         ORDER BY id DESC LIMIT 6");
-
+            $res = $conn->query("SELECT id, j_name AS title, description, image, quality, price, discount 
+                             FROM products WHERE category='football' ORDER BY id DESC LIMIT 6");
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
-
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
@@ -172,34 +154,26 @@ include_once '../shared/commonlinks.php';
                     $discount = intval($r['discount']);
 
                     echo "
-                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                    <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
                         <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-
-                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
-
-                            <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                                alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
+                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge position-absolute'>{$discount}% OFF</span>" : "") . "
+                            <img src='{$img}' class='card-img-top mx-auto mt-3' alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
                             <div class='card-body p-2 d-flex flex-column'>
-                            <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                            <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
-                            <p class='card-text text-muted small mb-2'>{$desc}</p>
-
-                            <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                                <li>
-                                    " . ($discount > 0
-                                ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                                : "<b>Rs " . number_format($price) . "</b>"
-                            ) . "
-                                </li>
-                            </ul>
-
+                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
+                                <p class='card-text text-muted small mb-2'>{$desc}</p>
+                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                                    <li>
+                                        " . ($discount > 0 ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                        <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs " . number_format($price) . "</b>") . "
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                        </a>
-                        </div>";
+                    </a>
+                </div>";
                 }
             } else {
                 echo '<p class="text-muted">No football jerseys available.</p>';
@@ -207,21 +181,14 @@ include_once '../shared/commonlinks.php';
             ?>
         </div>
 
-
-        <hr>
-
-        <!-- Nepal Cricket Jerseys -->
+        <!-- Cricket Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
             <?php
             $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
-                         FROM products 
-                         WHERE category = 'Cricket' 
-                         ORDER BY id DESC LIMIT 6");
-
+                             FROM products WHERE category='Cricket' ORDER BY id DESC LIMIT 6");
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
-
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
@@ -230,97 +197,70 @@ include_once '../shared/commonlinks.php';
                     $discount = intval($r['discount']);
 
                     echo "
-                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-
-                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px;right:10px;'>{$discount}% OFF</span>" : "") . "
-
-                            <img src='{$img}' class='card-img-top mx-auto mt-3'
-                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
-                            <div class='card-body p-2 d-flex flex-column'>
-                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                                <p class='card-text text-muted small mb-2'>{$desc}</p>
-
-                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                                <li>
-                                    " . ($discount > 0
-                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                        : "<b>Rs " . number_format($price) . "</b>"
-                    ) . "
-                                </li>
-                                </ul>
-
-                            </div>
-                            </div>
-                        </a>
-                        </div>";
-                }
-            } else {
-                echo '<p class="text-muted">No Cricket jerseys available.</p>';
-            }
-            ?>
-        </div>
-
-
-        <hr>
-
-        <!-- NPL Jerseys -->
-        <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
-        <div class="row justify-content-start">
-
-            <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price,discount 
-                     FROM products 
-                     WHERE category = 'NPL cricket' 
-                     ORDER BY id DESC LIMIT 6");
-
-            if ($res && $res->num_rows) {
-                while ($r = $res->fetch_assoc()) {
-
-                    $id = $r['id'];
-                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
-                    $title = htmlspecialchars($r['title']);
-                    $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = intval($r['price']);
-                    $discount = intval($r['discount']);
-
-                    echo "
-                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                    <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
                         <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-
-                            <!-- DISCOUNT BADGE (only display if >0) -->
-                            " . ($discount > 0
-                        ? "<span class='badge bg-danger discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>"
-                        : ""
-                    ) . "
-
-                            <img src='{$img}' class='card-img-top mx-auto mt-3'
-                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
+                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge position-absolute'>{$discount}% OFF</span>" : "") . "
+                            <img src='{$img}' class='card-img-top mx-auto mt-3' alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
                             <div class='card-body p-2 d-flex flex-column'>
                                 <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
                                 <p class='card-text text-muted small mb-2'>{$desc}</p>
-
                                 <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
                                     <li>
-                                        " . ($discount > 0
-                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                                <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                        : "<b class='ms-2 text-success'>Rs " . number_format($price) . "</b>"
-                    ) . "
+                                        " . ($discount > 0 ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                        <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs " . number_format($price) . "</b>") . "
                                     </li>
                                 </ul>
                             </div>
                         </div>
-                        </a>
-                        </div>";
+                    </a>
+                </div>";
                 }
             } else {
-                echo "<p class='text-muted'>No NPL jerseys available.</p>";
+                echo '<p class="text-muted">No cricket jerseys available.</p>';
+            }
+            ?>
+        </div>
+
+        <!-- NPL Jerseys -->
+        <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
+        <div class="row justify-content-start">
+            <?php
+            $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
+                             FROM products WHERE category='NPL cricket' ORDER BY id DESC LIMIT 6");
+            if ($res && $res->num_rows) {
+                while ($r = $res->fetch_assoc()) {
+                    $id = $r['id'];
+                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
+                    $title = htmlspecialchars($r['title']);
+                    $desc = htmlspecialchars($r['description'] ?? '');
+                    $price = intval($r['price']);
+                    $discount = intval($r['discount']);
+
+                    echo "
+                <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
+                    <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
+                        <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge position-absolute'>{$discount}% OFF</span>" : "") . "
+                            <img src='{$img}' class='card-img-top mx-auto mt-3' alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
+                            <div class='card-body p-2 d-flex flex-column'>
+                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text text-muted small mb-2'>{$desc}</p>
+                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
+                                    <li>
+                                        " . ($discount > 0 ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
+                                        <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
+                        : "<b>Rs " . number_format($price) . "</b>") . "
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </a>
+                </div>";
+                }
+            } else {
+                echo '<p class="text-muted">No NPL jerseys available.</p>';
             }
             ?>
         </div>
@@ -329,6 +269,27 @@ include_once '../shared/commonlinks.php';
 
     <?php include_once 'footer.php'; ?>
 
+    <!-- Live Search JS -->
+    <script>
+        function liveSearch(value) {
+            const resultBox = document.getElementById("searchResult");
+
+            if (value.trim() === "") {
+                resultBox.innerHTML = "";
+                document.getElementById("defaultProducts").style.display = "block";
+                return;
+            }
+
+            document.getElementById("defaultProducts").style.display = "none";
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "live_search.php?q=" + encodeURIComponent(value), true);
+            xhr.onload = function () {
+                resultBox.innerHTML = this.responseText;
+            };
+            xhr.send();
+        }
+    </script>
 </body>
 
 </html>
