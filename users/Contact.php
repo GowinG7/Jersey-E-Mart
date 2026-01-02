@@ -115,11 +115,19 @@ include("header.php");
                     <p><i class="bi bi-geo-alt-fill"></i> Bharatpur, Nepal</p>
 
                     <h5 class="mt-4">Call Us</h5>
-                    <p><i class="bi bi-telephone-fill"></i> +977-98XXXXXXXX</p>
-                    <p><i class="bi bi-telephone-fill"></i> +977-97XXXXXXXX</p>
+                    <p><i class="bi bi-telephone-fill"></i><a href="tel:+977-9800000000"
+                            class="d-inline-block text-decoration-none text-black">+977-9800000000
+                        </a></p>
+                    <p><i class="bi bi-telephone-fill"></i> <a href="tel:+977-9800000000"
+                            class="d-inline-block text-decoration-none text-black">+977-9800000000
+                        </a></p>
 
                     <h5 class="mt-4">Email</h5>
-                    <p><i class="bi bi-envelope-fill"></i> support@jerseyemart.com</p>
+                    <p class="mb-1 text-black">
+                        <i class="bi bi-envelope-fill me-2"></i>
+                        <a href="mailto:info@jerseyemart.com"
+                            class="text-decoration-none text-black">info@jerseyemart.com</a>
+                    </p>
 
                     <h5 class="mt-4">Follow Us</h5>
                     <a href="https://www.facebook.com/" class="text-dark fs-4 me-3"><i class="bi bi-facebook"></i></a>
