@@ -1,3 +1,4 @@
+<!-- User Profile management ko lagi -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";
@@ -172,23 +173,31 @@ if (isset($_SESSION['profile_error'])) {
         /* Specific style for the Change Password button */
         .change-password {
             background: #c0392b;
-            border-radius: 20px; /* larger radius for emphasis */
+            border-radius: 20px;
+            /* larger radius for emphasis */
             padding: 10px 22px;
             color: #fff;
         }
 
-        .change-password:hover { filter: brightness(0.95); color: #fff; }
+        .change-password:hover {
+            filter: brightness(0.95);
+            color: #fff;
+        }
 
         /* Specific style for the Update Profile button */
         .update-profile {
-            background: #1c6059; /* site primary */
+            background: #1c6059;
+            /* site primary */
             border-radius: 20px;
             padding: 10px 26px;
             color: #fff;
             font-weight: 600;
         }
 
-        .update-profile:hover { filter: brightness(0.95); color: #fff; }
+        .update-profile:hover {
+            filter: brightness(0.95);
+            color: #fff;
+        }
 
         /*MODAL*/
         .modal-overlay {
@@ -241,42 +250,58 @@ if (isset($_SESSION['profile_error'])) {
 
         /* Primary confirm button */
         .modal-actions .modal-confirm {
-            background: #1c6059; /* base */
+            background: #1c6059;
+            /* base */
             color: #fff;
         }
 
         .modal-actions .modal-confirm:hover {
-            background: #14543b; /* darker on hover */
-            box-shadow: 0 8px 18px rgba(20,84,59,0.18);
+            background: #14543b;
+            /* darker on hover */
+            box-shadow: 0 8px 18px rgba(20, 84, 59, 0.18);
             transform: translateY(-2px);
         }
+
         .modal-actions .modal-confirm:focus {
-            outline: 3px solid rgba(20,84,59,0.14);
+            outline: 3px solid rgba(20, 84, 59, 0.14);
             outline-offset: 2px;
         }
-        .modal-actions .modal-confirm:active { background: #0f4234; transform: translateY(0); }
+
+        .modal-actions .modal-confirm:active {
+            background: #0f4234;
+            transform: translateY(0);
+        }
 
         /* Secondary cancel button */
         .modal-actions .modal-cancel {
-            background: #ffffff; /* base */
+            background: #ffffff;
+            /* base */
             color: #1c6059;
             border: 1px solid #cdeeea;
         }
 
         .modal-actions .modal-cancel:hover {
-            background: #eef7f5; /* soft pale green */
+            background: #eef7f5;
+            /* soft pale green */
             color: #123f38;
-            box-shadow: 0 8px 18px rgba(20,84,59,0.06);
+            box-shadow: 0 8px 18px rgba(20, 84, 59, 0.06);
             transform: translateY(-2px);
         }
+
         .modal-actions .modal-cancel:focus {
-            outline: 3px solid rgba(20,84,59,0.06);
+            outline: 3px solid rgba(20, 84, 59, 0.06);
             outline-offset: 2px;
         }
-        .modal-actions .modal-cancel:active { background: #e6f3f1; transform: translateY(0); }
+
+        .modal-actions .modal-cancel:active {
+            background: #e6f3f1;
+            transform: translateY(0);
+        }
 
         @media (max-width: 480px) {
-            .modal-actions { flex-direction: column; }
+            .modal-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>

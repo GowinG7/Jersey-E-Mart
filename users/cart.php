@@ -1,3 +1,4 @@
+<!-- Cart related logic haru sabb handle grney -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";

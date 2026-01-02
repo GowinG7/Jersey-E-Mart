@@ -1,3 +1,4 @@
+<!-- user le order garisake paxi final orders summary dekhaune page checkout page -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";
@@ -128,7 +129,7 @@ $stmt->close();
             <p><span class="label">Quality:</span> <?php echo htmlspecialchars($it['quality']); ?></p>
             <p><span class="label">Quantity:</span> <?php echo intval($it['quantity']); ?></p>
             <p><span class="label">Rate:</span> Rs <?php echo number_format($it['final_price']); ?></p>
-            
+
             <p style="font-weight:bold;">
               Subtotal: Rs <?php echo number_format($it['subtotal']); ?>
             </p>

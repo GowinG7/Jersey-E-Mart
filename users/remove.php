@@ -1,3 +1,4 @@
+<!-- displaycart.php file ma bayeko remove action lai handle garne code -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";

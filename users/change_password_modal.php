@@ -1,3 +1,4 @@
+<!-- yo chaie profile management bata password change garna milos vanera -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";

@@ -1,3 +1,4 @@
+<!-- displaycart.php file ma bayeko update action lai handle garne code  -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";
@@ -25,7 +26,8 @@ if (isset($_POST['update_cart']) && isset($_POST['qty']) && is_array($_POST['qty
         $cart = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
-        if (!$cart) continue;
+        if (!$cart)
+            continue;
 
         // 2. Get available stock
         $stmt = $conn->prepare("SELECT stock FROM product_sizes WHERE product_id=? AND size=? LIMIT 1");
@@ -34,7 +36,8 @@ if (isset($_POST['update_cart']) && isset($_POST['qty']) && is_array($_POST['qty
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
 
-        if (!$row) continue;
+        if (!$row)
+            continue;
 
         $available_stock = intval($row['stock']);
 
