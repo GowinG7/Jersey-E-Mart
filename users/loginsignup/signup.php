@@ -15,53 +15,85 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
     $password = trim($_POST['pass']);
     $cpassword = trim($_POST['cpass']);
 
-    $errors = array();
+    // Full server-side validation to match signup.js
+    $errors = [];
 
-    //validation checks
-    if (!preg_match("/^[A-Za-z]+([ -][A-Za-z]+)*$/", $name)) {
-        array_push($errors, "Name must contain only letters, with optional single spaces or hyphens between words. No digits, special characters, or leading/trailing spaces allowed.");
+    // 1. Full Name
+    if (!preg_match("/^[A-Za-z]+( [A-Za-z]+)*$/", $name)) {
+        $errors[] = "Name should only contain letters, and spaces are allowed between words but not at the start.";
     }
 
-    if (!preg_match("/^[a-zA-Z0-9_@]+$/", $username)) {
-        array_push($errors, "Username can only contain letters, numbers, underscores and the @");
+    // 2. Username (letters, numbers, _, @) AND minimum 4 chars
+    if (!preg_match("/^[a-zA-Z0-9_@]+$/", $username) || strlen($username) < 4) {
+        $errors[] = "Username must have at least 4 characters and can only contain letters, numbers, underscores, and @.";
     }
 
-    if (!preg_match("/^[a-z0-9.]+@(gmail|yahoo|outlook)\.com$/", $email)) {
-        array_push($errors, "Email must contains a-z,0-9,.(dot/period) and end with @gmail.com,@yahoo.com or @outlook.com");
+    // 3. Email (letters, numbers, dots, valid domain)
+    if (!preg_match("/^[a-z0-9.]+@[a-z0-9.-]+\.[a-z]{2,}$/i", $email)) {
+        $errors[] = "Email must contain only letters (a-z), numbers (0-9), and periods (.) before the @, and must have a valid domain.";
     }
 
-    if (strlen($phone) < 10) {
-        array_push($errors, "Phone shouldnot be less than 10");
+    // 4. Phone (optional, if filled must be at least 10 digits)
+    if (!empty($phone) && strlen(trim($phone)) < 10) {
+        $errors[] = "Phone number must be at least 10 digits.";
     }
 
+    // 5. Security Answer (required)
     if (empty($answer)) {
-        array_push($errors, "Security answer can't be empty");
+        $errors[] = "Security answer cannot be empty.";
     }
+
+    // 6. Security Question (required)
     if (empty($question)) {
-        array_push($errors, "Please select a security question");
+        $errors[] = "Please select a security question.";
     }
 
+    // 7. Password validation (multiple rules)
+    $passErrors = [];
     if (strlen($password) < 8) {
-        array_push($errors, "Password must be at least 8 character long");
+        $passErrors[] = "Password must be at least 8 characters long.";
     }
+    if (!preg_match("/[A-Z]/", $password)) {
+        $passErrors[] = "Password must contain at least one uppercase letter.";
+    }
+    if (!preg_match("/[a-z]/", $password)) {
+        $passErrors[] = "Password must contain at least one lowercase letter.";
+    }
+    if (!preg_match("/[0-9]/", $password)) {
+        $passErrors[] = "Password must contain at least one digit.";
+    }
+    if (!preg_match("/[!@#$%^&*(),.?\":{}|<>]/", $password)) {
+        $passErrors[] = "Password must contain at least one special character.";
+    }
+    $errors = array_merge($errors, $passErrors);
 
+    // 8. Confirm Password
     if ($password !== $cpassword) {
-        array_push($errors, "Passwords donot match");
+        $errors[] = "Passwords do not match.";
     }
 
-    //check for existing username
-    $sql = "select * from user_creden where username = '$username'";
-    $result = $conn->query($sql);
+    // 9. Check for existing username
+    $sql = "SELECT * FROM user_creden WHERE username = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result->num_rows > 0) {
-        array_push($errors, "Username already exists. Please choose a different username");
+        $errors[] = "Username already exists. Please choose a different username.";
     }
+    $stmt->close();
 
-    //check for exisiting email
-    $sql = "select * from user_creden where email = '$email'";
-    $result = $conn->query($sql);
+    // 10. Check for existing email
+    $sql = "SELECT * FROM user_creden WHERE email = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result->num_rows > 0) {
-        array_push($errors, "Email already exists. Please select the other email");
+        $errors[] = "Email already exists. Please select a different email.";
     }
+    $stmt->close();
+
 
     //If errors exits -> store in session and redirect (button submit garisake paxi dekhauney message ko lagi store grya session ma 
     if (!empty($errors)) {
@@ -101,7 +133,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signup Form</title>
     <link rel="stylesheet" href="../css/signup.css">
-    
+
 </head>
 
 <body>
@@ -109,22 +141,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
     <div class="form-container">
         <h1>Create Account</h1>
         <!-- Display success or error messagesafter form submition -->
-         <?php
-         if (isset($_SESSION['successMessage'])) {
-             echo '<div class="success" id="successMessage">' . $_SESSION['successMessage'] . '</div>';
-             unset($_SESSION['successMessage']);
-         }
-         if (isset($_SESSION['errorMessages'])) {
-             // yeha mathi ko success messages jasari nai dekhayeni hunthiyo kiniki error messages array ko form ma rakhey ni
-             // hmle lagayeko condition anusar euta matra error aauxa so tara paxi ko lagi multiple error auula banera rakheko yo
-             echo '<div class="errormes" id="errorMessage">';
-             foreach ($_SESSION['errorMessages'] as $error) {
-                 echo '<p>' . $error . '</p>';
-             }
-             echo '</div>';
-             unset($_SESSION['errorMessages']);
-         }
-         ?>
+        <?php
+        if (isset($_SESSION['successMessage'])) {
+            echo '<div class="success" id="successMessage">' . $_SESSION['successMessage'] . '</div>';
+            unset($_SESSION['successMessage']);
+        }
+        if (isset($_SESSION['errorMessages'])) {
+            // yeha mathi ko success messages jasari nai dekhayeni hunthiyo kiniki error messages array ko form ma rakhey ni
+            // hmle lagayeko condition anusar euta matra error aauxa so tara paxi ko lagi multiple error auula banera rakheko yo
+            echo '<div class="errormes" id="errorMessage">';
+            foreach ($_SESSION['errorMessages'] as $error) {
+                echo '<p>' . $error . '</p>';
+            }
+            echo '</div>';
+            unset($_SESSION['errorMessages']);
+        }
+        ?>
 
         <form method="POST" action="signup.php" id="signup-form">
             <div class="form-group">
@@ -161,7 +193,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
                     <option value="laptop">Favourite Laptop</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="answer">Enter Answer:</label>
                 <input type="text" id="answer" name="answer" placeholder="Enter your answer" required>
@@ -188,9 +220,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
     </div>
 
     <!-- offline jquery v3.7.1 script file -->
-        <script src="../../shared/jquery-3.7.1.min.js"></script>
-        <script src="../js/hidemessage.js"></script>
-        <script src="../js/signup.js"></script>
+    <script src="../../shared/jquery-3.7.1.min.js"></script>
+    <script src="../js/hidemessage.js"></script>
+    <script src="../js/signup.js"></script>
 
 </body>
 
