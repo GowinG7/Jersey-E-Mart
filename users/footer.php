@@ -20,9 +20,9 @@ include_once "../shared/commonlinks.php";
                 <h5 class=" mb-1 fw-semibold text-black">Links</h5>
                 <ul class="list-unstyled mb-lg-0">
                     <li><a href="index.php" class="text-white text-decoration-none">Home</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Jerseys</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Contact</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">About</a></li>
+                    <li><a href="jersey.php" class="text-white text-decoration-none">Jerseys</a></li>
+                    <li><a href="Contact.php" class="text-white text-decoration-none">Contact</a></li>
+                    <li><a href="about.php" class="text-white text-decoration-none">About</a></li>
                 </ul>
             </div>
 
@@ -31,9 +31,10 @@ include_once "../shared/commonlinks.php";
                 <h5 class=" mb-1 fw-semibold text-black">Customer Support</h5>
                 <ul class="list-unstyled mb-0">
                     <li><a href="FAQ.php" class="text-white text-decoration-none">FAQs</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Shipping Policy</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Return Policy</a></li>
-                    <li><a href="#" class="text-white text-decoration-none">Terms & Conditions</a></li>
+                    <li><a href="shipping_policy.php" class="text-white text-decoration-none">Shipping Policy</a></li>
+                    <li><a href="return_policy.php" class="text-white text-decoration-none">Return Policy</a></li>
+                    <li><a href="terms_conditions.php" class="text-white text-decoration-none">Terms & Conditions</a>
+                    </li>
                 </ul>
             </div>
 
@@ -43,8 +44,8 @@ include_once "../shared/commonlinks.php";
                 <p class="addtext mb-1 text-white"><i class="bi bi-geo-alt-fill me-2"></i>Bharatpur, Nepal</p>
                 <p class="mb-1 text-white">
                     <i class="bi bi-telephone-fill me-2"></i>
-                    <a href="tel:+977-9800000000"
-                        class="d-inline-block text-decoration-none text-white">+977-9800000000</a>
+                    <a href="tel:+977-9800000000" class="d-inline-block text-decoration-none text-white">+977-9800000000
+                    </a>
                 </p>
                 <p class="mb-1 text-white">
                     <i class="bi bi-envelope-fill me-2"></i>
