@@ -292,11 +292,10 @@ include_once '../shared/commonlinks.php';
         <hr>
 
         <!-- Nepal Cricket Jerseys -->
-        <!-- Nepal Cricket Jerseys -->
         <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
+            $res = $conn->query("SELECT id, j_name AS title,quality, description, image, price, discount 
                          FROM products 
                          WHERE category = 'Cricket' 
                          ORDER BY id DESC LIMIT 6");
@@ -323,6 +322,7 @@ include_once '../shared/commonlinks.php';
 
                             <div class='card-body p-2 d-flex flex-column'>
                                 <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
                                 <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                                 <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
@@ -354,7 +354,7 @@ include_once '../shared/commonlinks.php';
         <div class="row justify-content-start">
 
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price,discount 
+            $res = $conn->query("SELECT id, j_name AS title, quality, description, image, price,discount 
                      FROM products 
                      WHERE category = 'NPL cricket' 
                      ORDER BY id DESC LIMIT 6");
@@ -365,6 +365,7 @@ include_once '../shared/commonlinks.php';
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
+                    $quality = htmlspecialchars($r['quality'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
                     $price = intval($r['price']);
                     $discount = intval($r['discount']);
@@ -385,6 +386,7 @@ include_once '../shared/commonlinks.php';
 
                             <div class='card-body p-2 d-flex flex-column'>
                                 <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
                                 <p class='card-text text-muted small mb-2'>{$desc}</p>
 
                                 <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
@@ -408,6 +410,40 @@ include_once '../shared/commonlinks.php';
         </div>
 
     </div>
+
+    <!-- Reach Us / Head Office -->
+    <section class="container my-5">
+        <div class="row align-items-start">
+            <!-- Map -->
+            <div class="col-lg-7 col-md-8 col-12 mb-4 px-4">
+                <div class="bg-white rounded shadow p-0 overflow-hidden">
+                    <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Reach Us — Head Office</h5>
+                    </div>
+                    <iframe class="w-100 d-block" style="min-height:320px; border:0;" height="320"
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d8407.168480256954!2d84.38693763278744!3d27.631362988094352!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994fa7bee03649d%3A0x6eb3396ddd7fc183!2sindrapuri%20mandir%2C%20Bharatpur%2044200!5e0!3m2!1sen!2snp!4v1764871807942!5m2!1sen!2snp"
+                        loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                        aria-label="Jersey E-Mart Head Office map"></iframe>
+                </div>
+            </div>
+
+            <!-- Contact details -->
+            <div class="col-lg-5 col-md-4 col-12 mb-4 px-4">
+                <div class="bg-white rounded shadow p-4 h-100">
+                    <h6 class="fw-semibold"><i class="bi bi-geo-alt-fill me-2"></i>Address</h6>
+                    <p class="mb-2">Bharatpur, Nepal</p>
+
+
+                    <div class="d-grid gap-2">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=Bharatpur+Nepal" target="_blank"
+                            rel="noopener noreferrer" class="btn btn-success btn-sm">Get Directions</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=Bharatpur+Nepal" target="_blank"
+                            rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">View Larger Map</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <?php include_once 'footer.php'; ?>
 
