@@ -1,3 +1,4 @@
+<!-- jaba jersey page ma click garinxa tespaxi dekhaune jersey details page -->
 <?php
 session_start();
 include("header.php");
@@ -63,6 +64,12 @@ if ($discount > 0) {
 </head>
 
 <body style="background-color:#e9f8f6; font-family:Segoe UI;">
+    <!-- Back button: top-left below header -->
+    <div class="container mt-3">
+        <a href="jersey.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Go back
+        </a>
+    </div>
     <div class="container py-5">
         <div class="row g-4">
             <!-- Image -->
@@ -71,7 +78,6 @@ if ($discount > 0) {
                     style="background:#fff;padding:18px;max-height:480px;object-fit:contain;">
             </div>
 
-            <!-- Details -->
             <div class="col-md-6">
                 <h2 class="fw-bold" style="color:#1c6059;"><?php echo htmlspecialchars($p['j_name']); ?></h2>
                 <p class="text-muted"><?php echo htmlspecialchars($p['description']); ?></p>
@@ -89,8 +95,10 @@ if ($discount > 0) {
                 </div>
 
                 <div class="alert alert-warning mt-3" role="alert" style="border-radius:6px;">
-                     For full-set or bulk orders, please
-                    <a href="Contact.php" class="alert-link" style="font-weight:600; text-decoration: none;color:#1c6059;">contact the admin</a> for negotiable prices 
+                    For full-set or bulk orders, please
+                    <a href="Contact.php" class="alert-link"
+                        style="font-weight:600; text-decoration: none;color:#1c6059;">contact the admin</a> for
+                    negotiable prices
                 </div>
 
                 <h6 class="fw-semibold">Available Sizes</h6>
