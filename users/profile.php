@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $success = $error = "";
 
-//UPDATE PROFILE 
+// UPDATE PROFILE 
 if (isset($_POST['update_profile'])) {
 
     $name = trim($_POST['name']);
@@ -22,43 +22,103 @@ if (isset($_POST['update_profile'])) {
     $security_question = trim($_POST['security_question']);
     $security_answer = trim($_POST['security_answer']);
 
-    if ($name && $username && $email && $phone && $security_question && $security_answer) {
+    $errors = [];
 
-        $stmt = $conn->prepare("
-            UPDATE user_creden 
-            SET name=?, username=?, email=?, phone=?, security_question=?, security_answer=?
-            WHERE id=?
-        ");
-        $stmt->bind_param(
-            "ssssssi",
-            $name,
-            $username,
-            $email,
-            $phone,
-            $security_question,
-            $security_answer,
-            $user_id
-        );
+    /* ---------- VALIDATION (SAME AS SIGNUP JS) ---------- */
 
-        if ($stmt->execute()) {
-            // Use session messages and redirect to avoid form resubmission on refresh (PRG pattern)
-            $_SESSION['profile_success'] = "Profile updated successfully.";
-            $_SESSION['username'] = $username;
-            $stmt->close();
-            header("Location: profile.php");
-            exit();
-        } else {
-            $_SESSION['profile_error'] = "Failed to update profile.";
-            $stmt->close();
-            header("Location: profile.php");
-            exit();
-        }
-    } else {
-        $_SESSION['profile_error'] = "All fields are required.";
+    // Full name: letters only, spaces allowed between words
+    if (!preg_match('/^[A-Za-z]+( [A-Za-z]+)*$/', $name)) {
+        $errors[] = "Name should only contain letters, and spaces are allowed between words but not at the start.";
+    }
+
+    // Username: allowed chars + minimum length 4
+    if (!preg_match('/^[a-zA-Z0-9_@]+$/', $username) || strlen($username) < 4) {
+        $errors[] = "Username must have atleast 4 character and can only contain letters, numbers, underscores, and the @ symbol";
+    }
+
+    // Email: same as signup JS
+    if (!preg_match('/^[a-z0-9.]+@[a-z0-9.-]+\.[a-z]{2,}$/', $email)) {
+        $errors[] = "Email must contain only letters (a-z), numbers (0-9), and periods (.) before the @, and must have a valid domain.";
+    }
+
+    // Phone: length only (same as signup)
+    if (strlen(trim($phone)) < 10) {
+        $errors[] = "Phone number must be at least 10 digits";
+    }
+
+    // Security question
+    if ($security_question === '') {
+        $errors[] = "Security question cannot be empty.";
+    }
+
+    // Security answer
+    if (trim($security_answer) === '') {
+        $errors[] = "Security answer cannot be empty.";
+    }
+
+
+    /* ---------- UNIQUE USERNAME CHECK ---------- */
+    $stmt = $conn->prepare("
+        SELECT id FROM user_creden 
+        WHERE username = ? AND id != ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("si", $username, $user_id);
+    $stmt->execute();
+    if ($stmt->get_result()->num_rows > 0) {
+        $errors[] = "Username already exists. Please choose another.";
+    }
+    $stmt->close();
+
+    /* ---------- UNIQUE EMAIL CHECK ---------- */
+    $stmt = $conn->prepare("
+        SELECT id FROM user_creden 
+        WHERE email = ? AND id != ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("si", $email, $user_id);
+    $stmt->execute();
+    if ($stmt->get_result()->num_rows > 0) {
+        $errors[] = "Email already exists. Please choose another.";
+    }
+    $stmt->close();
+
+    /* ---------- HANDLE ERRORS ---------- */
+    if (!empty($errors)) {
+        $_SESSION['profile_error'] = implode(" ", $errors);
         header("Location: profile.php");
         exit();
     }
+
+    /* ---------- UPDATE PROFILE ---------- */
+    $stmt = $conn->prepare("
+        UPDATE user_creden 
+        SET name=?, username=?, email=?, phone=?, security_question=?, security_answer=?
+        WHERE id=?
+    ");
+    $stmt->bind_param(
+        "ssssssi",
+        $name,
+        $username,
+        $email,
+        $phone,
+        $security_question,
+        $security_answer,
+        $user_id
+    );
+
+    if ($stmt->execute()) {
+        $_SESSION['profile_success'] = "Profile updated successfully.";
+        $_SESSION['username'] = $username;
+    } else {
+        $_SESSION['profile_error'] = "Failed to update profile.";
+    }
+
+    $stmt->close();
+    header("Location: profile.php");
+    exit();
 }
+
 
 //FETCH USER DATA 
 $stmt = $conn->prepare("
@@ -410,99 +470,7 @@ if (isset($_SESSION['profile_error'])) {
 
     <?php include_once 'footer.php'; ?>
 
-    <script>
-        function openModal() {
-            document.getElementById("passwordModal").style.display = "flex";
-        }
-
-        function closeModal() {
-            document.getElementById("passwordModal").style.display = "none";
-        }
-
-        // Helper to show messages in the password modal. Success messages auto-dismiss after 4s.
-        function showModalMsg(type, text) {
-            const el = document.getElementById("modalMsg");
-            // Reset styles
-            el.style.transition = '';
-            el.style.opacity = '';
-            el.style.maxHeight = '';
-            el.style.margin = '';
-
-            el.className = 'msg ' + (type === 'success' ? 'success' : 'error');
-            el.innerText = text;
-
-            if (type === 'success') {
-                // Auto-dismiss after 4 seconds with a short fade/collapse
-                setTimeout(() => {
-                    el.style.transition = 'opacity 0.45s ease, max-height 0.45s ease, margin 0.45s ease';
-                    el.style.opacity = '0';
-                    el.style.maxHeight = '0';
-                    el.style.margin = '0';
-                    setTimeout(() => {
-                        el.className = 'msg';
-                        el.innerText = '';
-                        el.style.transition = '';
-                        el.style.opacity = '';
-                        el.style.maxHeight = '';
-                        el.style.margin = '';
-                    }, 500);
-                }, 4000);
-            }
-        }
-
-        document.getElementById("changePasswordForm").addEventListener("submit", function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-
-            fetch("change_password_modal.php", {
-                method: "POST",
-                body: formData
-            })
-                .then(res => res.text())
-                .then(msg => {
-                    if (msg.trim() === "success") {
-                        showModalMsg('success', 'Password changed successfully.');
-                        this.reset();
-                    } else {
-                        showModalMsg('error', msg);
-                    }
-                });
-        });
-
-        // Auto-dismiss profile update success messages after 4 seconds
-        (function () {
-            try {
-                const profileSuccessMsgs = document.querySelectorAll('.profile-card .msg.success');
-                profileSuccessMsgs.forEach(el => {
-                    if (el.textContent.trim()) {
-                        setTimeout(() => {
-                            el.style.transition = 'opacity 0.45s ease, max-height 0.45s ease, margin 0.45s ease';
-                            el.style.opacity = '0';
-                            el.style.maxHeight = '0';
-                            el.style.margin = '0';
-                            setTimeout(() => el.remove(), 500);
-                        }, 4000);
-                    }
-                });
-            } catch (e) {
-                // fail silently
-                console.warn('Auto-dismiss script error', e);
-            }
-        })();
-
-        // Confirm before profile update
-        (function () {
-            const profileForm = document.getElementById('profileForm');
-            if (profileForm) {
-                profileForm.addEventListener('submit', function (e) {
-                    const confirmed = confirm('Are you sure you want to change your profile details? This will change your account information.');
-                    if (!confirmed) {
-                        e.preventDefault();
-                    }
-                });
-            }
-        })();
-    </script>
+   <script src="js/profile.js"></script>
 
 </body>
 

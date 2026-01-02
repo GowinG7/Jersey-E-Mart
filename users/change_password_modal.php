@@ -1,4 +1,4 @@
-<!-- yo chaie profile management bata password change garna milos vanera -->
+<!-- Profile management ko lagi user password change garna  -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";
@@ -18,8 +18,9 @@ $cnewpass = trim($_POST['confirm_password'] ?? '');
 
 $errors = [];
 
-// Validation
-if (!$question || !$answer || !$newpass || !$cnewpass) {
+/*  SERVER-SIDE VALIDATION  */
+
+if ($question === '' || $answer === '' || $newpass === '' || $cnewpass === '') {
     $errors[] = "All fields are required.";
 }
 
@@ -28,15 +29,33 @@ if ($newpass !== $cnewpass) {
 }
 
 if (strlen($newpass) < 8) {
-    $errors[] = "Password must be at least 8 characters.";
+    $errors[] = "Password must be at least 8 characters long.";
+}
+
+if (!preg_match('/[A-Z]/', $newpass)) {
+    $errors[] = "Password must contain at least one uppercase letter.";
+}
+
+if (!preg_match('/[a-z]/', $newpass)) {
+    $errors[] = "Password must contain at least one lowercase letter.";
+}
+
+if (!preg_match('/[0-9]/', $newpass)) {
+    $errors[] = "Password must contain at least one digit.";
+}
+
+if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $newpass)) {
+    $errors[] = "Password must contain at least one special character.";
 }
 
 if (!empty($errors)) {
-    echo implode("<br>", $errors);
+    // Plain text response only
+    echo implode("\n", $errors);
     exit;
 }
 
-// Fetch security question & answer
+/*  VERIFY SECURITY QUESTION  */
+
 $stmt = $conn->prepare("
     SELECT security_question, security_answer
     FROM user_creden
@@ -48,8 +67,8 @@ $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Verify security
 if (
+    !$user ||
     $user['security_question'] !== $question ||
     $user['security_answer'] !== $answer
 ) {
@@ -57,7 +76,8 @@ if (
     exit;
 }
 
-// Update password
+/*  UPDATE PASSWORD  */
+
 $hashedPassword = password_hash($newpass, PASSWORD_DEFAULT);
 
 $update = $conn->prepare("
@@ -74,3 +94,4 @@ if ($update->execute()) {
 }
 
 $update->close();
+$conn->close();
