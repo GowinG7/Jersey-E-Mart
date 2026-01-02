@@ -6,9 +6,9 @@ $key = strtolower(trim($_GET['q'] ?? ''));
 if ($key === '')
     exit;
 
-// Fetch all products
+// Fetch all products (include fields used in results)
 $data = [];
-$res = $conn->query("SELECT id, j_name, image, price, discount FROM products");
+$res = $conn->query("SELECT id, j_name, image, price, discount, quality, description FROM products");
 while ($row = $res->fetch_assoc())
     $data[] = $row;
 

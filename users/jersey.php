@@ -123,7 +123,7 @@ include_once '../shared/commonlinks.php';
     <!-- Search Bar -->
     <div class="container mt-3">
         <div class="row justify-content-center">
-            <div class="col-sm-3 col-md-5 col-lg-6">
+            <div class="col-sm-10 col-md-10 col-lg-8">
                 <input id="searchInput" class="form-control me-2" type="search" placeholder="Search jersey..."
                     oninput="liveSearch(this.value)">
             </div>
@@ -185,13 +185,14 @@ include_once '../shared/commonlinks.php';
         <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
         <div class="row justify-content-start">
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
+            $res = $conn->query("SELECT id, j_name AS title, quality, description, image, price, discount 
                              FROM products WHERE category='Cricket' ORDER BY id DESC LIMIT 6");
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
+                    $quality = htmlspecialchars($r['quality'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
                     $price = intval($r['price']);
                     $discount = intval($r['discount']);
@@ -204,6 +205,7 @@ include_once '../shared/commonlinks.php';
                             <img src='{$img}' class='card-img-top mx-auto mt-3' alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
                             <div class='card-body p-2 d-flex flex-column'>
                                 <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
                                 <p class='card-text text-muted small mb-2'>{$desc}</p>
                                 <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
                                     <li>
@@ -227,13 +229,14 @@ include_once '../shared/commonlinks.php';
         <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
         <div class="row justify-content-start">
             <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image, price, discount 
+            $res = $conn->query("SELECT id, j_name AS title,quality, description, image, price, discount 
                              FROM products WHERE category='NPL cricket' ORDER BY id DESC LIMIT 6");
             if ($res && $res->num_rows) {
                 while ($r = $res->fetch_assoc()) {
                     $id = $r['id'];
                     $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
                     $title = htmlspecialchars($r['title']);
+                    $quality = htmlspecialchars($r['quality'] ?? '');
                     $desc = htmlspecialchars($r['description'] ?? '');
                     $price = intval($r['price']);
                     $discount = intval($r['discount']);
@@ -246,6 +249,7 @@ include_once '../shared/commonlinks.php';
                             <img src='{$img}' class='card-img-top mx-auto mt-3' alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
                             <div class='card-body p-2 d-flex flex-column'>
                                 <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
+                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
                                 <p class='card-text text-muted small mb-2'>{$desc}</p>
                                 <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
                                     <li>
