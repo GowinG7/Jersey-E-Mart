@@ -100,7 +100,7 @@ if (isset($_SESSION['user_id'])) {
           </a>
 
           <!-- Profile Badge -->
-          <a href="#" class="navbar-pill">
+          <a href="profile.php" class="navbar-pill">
             <i class="bi bi-person-circle"></i>
             <span><?php echo htmlspecialchars($_SESSION['nam']); ?></span>
           </a>
