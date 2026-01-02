@@ -88,6 +88,11 @@ if ($discount > 0) {
                     <?php endif; ?>
                 </div>
 
+                <div class="alert alert-warning mt-3" role="alert" style="border-radius:6px;">
+                     For full-set or bulk orders, please
+                    <a href="Contact.php" class="alert-link" style="font-weight:600; text-decoration: none;color:#1c6059;">contact the admin</a> for negotiable prices 
+                </div>
+
                 <h6 class="fw-semibold">Available Sizes</h6>
                 <div class="d-flex flex-wrap mb-3">
                     <?php
