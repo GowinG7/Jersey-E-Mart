@@ -201,7 +201,6 @@ if (isset($_GET['del'])) {
     <style>
         body {
             background: #e9fffa;
-            font-family: calibri;
         }
 
         .table-header {

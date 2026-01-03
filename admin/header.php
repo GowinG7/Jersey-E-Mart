@@ -1,88 +1,119 @@
-<?php $currentPage = basename($_SERVER['PHP_SELF']); ?>
+<?php
+session_start();
+require_once("../shared/dbconnect.php");
+include_once("../shared/commonlinks.php");
+
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
 
 <style>
     :root {
-        --admin-green: #1c6059;
         --admin-green-dark: #164a44;
-        --admin-sidebar-width: 260px; /* changeable width for sidebar */
-        --admin-topbar-height: 70px; /* consistent topbar height */
-        --admin-z-topbar: 9999;
-        --admin-z-sidebar: 1020;
-        --admin-seam-color: rgba(255,255,255,0.08);
+        --admin-sidebar-width: 160px;
+        /* desired width */
+        --admin-topbar-height: 70px;
     }
 
-    /* ================= HEADER ================= */
+    /*  TOPBAR  */
     .admin-header {
         height: var(--admin-topbar-height);
         background: var(--admin-green-dark);
         position: fixed;
         top: 0;
-        right: 0;
         left: 0;
-        z-index: var(--admin-z-topbar);
+        right: 0;
+        z-index: 1050;
         display: flex;
         align-items: center;
-        padding: 0 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-        border-bottom: 1px solid rgba(255,255,255,0.02);
     }
 
-    .admin-header > .container-fluid { padding-left: 1.25rem; padding-right: 1.25rem; }
+    /*  SIDEBAR  */
+    .admin-sidebar {
+        border-top: 3px solid #0b1720ff;
+        width: var(--admin-sidebar-width);
+        background: var(--admin-green-dark);
+        color: #ffffff;
+    }
 
+    .admin-sidebar .nav-link {
+        color: #fff;
+        padding: 12px 18px;
+        font-weight: 500;
+        border-left: 4px solid transparent;
+    }
+
+    .admin-sidebar .nav-link:hover,
+    .admin-sidebar .nav-link.active {
+        background: rgba(25, 132, 37, 0.12);
+        border-left-color: rgba(54, 157, 58, 0.3);
+        border: 1px solid whitesmoke;
+    }
+
+    /* Desktop sidebar (always visible) */
     @media (min-width: 992px) {
-        .admin-header > .container-fluid { padding-left: calc(var(--admin-sidebar-width) + 1.5rem); padding-right: 1.5rem; }
-        .admin-header::before {
-            content: "";
-            position: absolute;
-            left: var(--admin-sidebar-width);
-            top: 0;
-            height: var(--admin-topbar-height);
-            width: 1px;
-            background: var(--admin-seam-color);
-            z-index: calc(var(--admin-z-topbar) + 1);
-            pointer-events: none;
+        .admin-sidebar {
+            position: fixed;
+            top: var(--admin-topbar-height);
+            left: 0;
+            height: calc(100vh - var(--admin-topbar-height));
+            overflow-y: auto;
+            z-index: 1030;
         }
     }
 
-    .admin-header .navbar-brand { line-height: 1; font-size: 1.25rem; color: #fff; font-weight: 700; }
-    .admin-header .ms-auto { display: flex; align-items: center; gap: 0.5rem; }
-
-    /* ================= SIDEBAR ================= */
-    .admin-sidebar {
+    /*  MOBILE OFFCANVAS SIDEBAR  */
+    #adminSidebarMobile.offcanvas-start {
+        border-top: 3px solid #0b1720ff;
         width: var(--admin-sidebar-width);
         background: var(--admin-green-dark);
-        height: calc(100vh - var(--admin-topbar-height));
-        position: fixed;
-        top: var(--admin-topbar-height); /* start below topbar */
-        left: 0;
-        padding-top: 8px; /* small pad instead of using topbar padding */
-        display: flex;
-        flex-direction: column;
-        z-index: var(--admin-z-sidebar);
-        overflow-y: auto; /* allow scrolling when links exceed height */
-        box-shadow: 1px 0 6px rgba(0,0,0,0.08);
-        border-right: 1px solid var(--admin-seam-color);
     }
 
-    .admin-sidebar .nav-link { color: #fff; padding: 12px 18px; font-weight: 500; border-left: 4px solid transparent; }
-    .admin-sidebar .nav-link:hover, .admin-sidebar .nav-link.active { background: rgba(255,255,255,0.12); border-left-color: rgba(255,255,255,0.12); font-weight: 600; }
-    .admin-sidebar .nav-item.mt-auto { margin-top: auto; }
+    #adminSidebarMobile .nav-link {
+        color: #fff;
+        border-left: 4px solid transparent;
+    }
 
-    /* ================= CONTENT ================= */
-    .admin-content { padding-top: calc(var(--admin-topbar-height) + 8px); }
-    @media (min-width: 992px) { .admin-content { margin-left: var(--admin-sidebar-width); width: calc(100% - var(--admin-sidebar-width)); padding-right: 1.25rem; } }
+    #adminSidebarMobile .nav-link:hover,
+    #adminSidebarMobile .nav-link.active {
+        background: rgba(25, 132, 37, 0.12);
+        border-left-color: rgba(54, 157, 58, 0.3);
+        border: 1px solid whitesmoke;
+    }
 
-    /* ================= MOBILE MENU ================= */
-    .mobile-menu { background: var(--admin-green-dark); }
-    .mobile-menu .nav-link { color: #fff; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.15); }
-    .mobile-menu .nav-link.active { background: rgba(255,255,255,0.2); font-weight: 600; }
+    /* Make mobile offcanvas appear below topbar */
+    @media (max-width: 991px) {
+        #adminSidebarMobile {
+            margin-top: var(--admin-topbar-height);
+            height: calc(100vh - var(--admin-topbar-height));
+        }
+    }
+
+    /*  CONTENT  */
+    .admin-content {
+        margin-top: var(--admin-topbar-height);
+        padding: 20px;
+        background: #e5f0eb;
+        min-height: calc(100vh - var(--admin-topbar-height));
+    }
+
+    @media (min-width: 992px) {
+        .admin-content {
+            margin-left: var(--admin-sidebar-width);
+        }
+    }
 </style>
 
-<!-- ================= DESKTOP SIDEBAR ================= -->
+<!--  DESKTOP SIDEBAR  -->
 <div class="admin-sidebar d-none d-lg-flex flex-column">
     <ul class="nav flex-column mt-2">
         <li class="nav-item">
-            <a class="nav-link <?= $currentPage == 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php">Dashboard</a>
+            <a class="nav-link <?= $currentPage == 'dashboard.php' ? 'active' : '' ?>"
+                href="dashboard.php">Dashboard</a>
         </li>
         <li class="nav-item">
             <a class="nav-link <?= $currentPage == 'orders.php' ? 'active' : '' ?>" href="orders.php">Orders</a>
@@ -97,42 +128,53 @@
             <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>" href="carousel.php">Carousel</a>
         </li>
         <li class="nav-item mt-auto">
-            <a class="nav-link text-warning" href="logout.php">Logout</a>
+            <a class="nav-link" href="user_queries.php">User Queries</a>
         </li>
     </ul>
 </div>
 
-<!-- ================= HEADER BAR ================= -->
-<nav class="navbar admin-header admin-topbar navbar-expand-lg">
-    <div class="container-fluid px-4">
-        <!-- Brand for mobile -->
-        <a class="navbar-brand text-white fw-bold d-lg-none" href="dashboard.php">Jersey E-Mart</a>
-        <!-- Brand for desktop -->
-        <a class="navbar-brand text-white fw-bold d-none d-lg-block" href="dashboard.php">Jersey E-Mart</a>
-
-        <!-- Hamburger (mobile / tablet) -->
-        <button class="navbar-toggler shadow-none text-white d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <!-- Desktop logout -->
-        <div class="ms-auto d-none d-lg-flex">
-            <a href="logout.php" class="btn btn-light btn-sm">Logout</a>
-        </div>
-    </div>
-</nav>
-
-<!-- ================= MOBILE / TABLET MENU ================= -->
-<div class="collapse d-lg-none" id="adminMobileMenu">
-    <div class="mobile-menu">
-        <a class="nav-link <?= $currentPage == 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php">Dashboard</a>
-        <a class="nav-link <?= $currentPage == 'orders.php' ? 'active' : '' ?>" href="orders.php">Orders</a>
-        <a class="nav-link <?= $currentPage == 'users.php' ? 'active' : '' ?>" href="users.php">Users</a>
-        <a class="nav-link <?= $currentPage == 'jersies.php' ? 'active' : '' ?>" href="jersies.php">Jerseys</a>
-        <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>" href="carousel.php">Carousel</a>
-        <a class="nav-link text-warning" href="logout.php">Logout</a>
+<!--  MOBILE SIDEBAR (OFFCANVAS)  -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="adminSidebarMobile">
+    <div class="offcanvas-body p-0">
+        <ul class="nav flex-column mt-2">
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'dashboard.php' ? 'active' : '' ?>"
+                    href="dashboard.php">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'orders.php' ? 'active' : '' ?>" href="orders.php">Orders</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'users.php' ? 'active' : '' ?>" href="users.php">Users</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'jersies.php' ? 'active' : '' ?>" href="jersies.php">Jerseys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>"
+                    href="carousel.php">Carousel</a>
+            </li>
+            <li class="nav-item mt-auto">
+                <a class="nav-link" href="user_queries.php">User Queries</a>
+            </li>
+        </ul>
     </div>
 </div>
 
-<!-- ================= CONTENT AREA ================= -->
-<div class="admin-content"></div>
+<!--  TOPBAR  -->
+<nav class="navbar navbar-dark admin-header">
+    <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <!-- Hamburger only on mobile -->
+            <button class="btn btn-outline-light d-lg-none" data-bs-toggle="offcanvas"
+                data-bs-target="#adminSidebarMobile">
+                ☰
+            </button>
+
+            <span class="navbar-brand fw-bold mb-0">Admin Panel</span>
+        </div>
+
+        <!-- Logout always visible -->
+        <a href="logout.php" class="btn btn-light btn-sm">Logout</a>
+    </div>
+</nav>
