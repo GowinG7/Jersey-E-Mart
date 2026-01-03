@@ -127,8 +127,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <li class="nav-item">
             <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>" href="carousel.php">Carousel</a>
         </li>
-        <li class="nav-item mt-auto">
-            <a class="nav-link" href="user_queries.php">User Queries</a>
+        <li class="nav-item">
+            <a class="nav-link <?= $currentPage == 'user_queries.php' ? 'active' : '' ?>" href="user_queries.php">User
+                Queries</a>
         </li>
     </ul>
 </div>
@@ -154,8 +155,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>"
                     href="carousel.php">Carousel</a>
             </li>
-            <li class="nav-item mt-auto">
-                <a class="nav-link" href="user_queries.php">User Queries</a>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'user_queries.php' ? 'active' : '' ?>"
+                    href="user_queries.php">User Queries</a>
             </li>
         </ul>
     </div>
