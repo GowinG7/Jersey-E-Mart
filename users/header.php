@@ -91,7 +91,7 @@ if (isset($_SESSION['user_id'])) {
         <?php if (isset($_SESSION['user_id'])): ?>
 
           <!-- Cart Icon -->
-          <a href="displaycart.php" class="navbar-pill position-relative">
+          <a href="displaycart.php" class="navbar-pill ">
             <i class="bi bi-cart"></i>
             <span>Cart</span>
             <?php if ($cart_count > 0): ?>
