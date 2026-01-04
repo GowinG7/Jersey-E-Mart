@@ -21,9 +21,8 @@ include_once '../shared/commonlinks.php';
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        h1,
-        h3 {
-            color: #1c6059;
+        h1{
+            color: rgb(155, 125, 170, 1);
         }
 
         h1 span {
@@ -87,6 +86,7 @@ include_once '../shared/commonlinks.php';
             margin-top: 60px;
             margin-bottom: 30px;
             font-weight: 700;
+            color: rgba(28, 96, 89, 0.55);
         }
 
         hr {

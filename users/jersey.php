@@ -17,7 +17,6 @@ include_once '../shared/commonlinks.php';
             background-color: #e0f4f2;
             color: #2d5d58;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
         }
 
 

@@ -1,4 +1,8 @@
-<?php include_once 'header.php'; ?>
+<?php
+session_start();
+require_once '../shared/dbconnect.php';
+include_once 'header.php';
+?>
 <!DOCTYPE html>
 <html>
 

@@ -46,10 +46,10 @@ while ($row = $res->fetch_assoc()) {
         <td>" . htmlspecialchars($row['jersey_size']) . "</td>
         <td>" . htmlspecialchars($row['quality']) . "</td>
         <td>" . intval($row['quantity']) . "</td>
-        <td>₹ " . number_format($row['base_price'], 2) . "</td>
-        <td>₹ " . number_format($row['print_cost'], 2) . "</td>
-        <td>₹ " . number_format($row['final_price'], 2) . "</td>
-        <td>₹ " . number_format($row['subtotal'], 2) . "</td>
+        <td>" . (!empty($row['base_price']) ? "RS. " . number_format($row['base_price']) : "-") . "</td>
+        <td>" . (!empty($row['print_cost']) ? "RS. " . number_format($row['print_cost']) : "-") . "</td>
+        <td>" . (!empty($row['final_price']) ? "RS. " . number_format($row['final_price']) : "-") . "</td>
+        <td>" . (!empty($row['subtotal']) ? "RS. " . number_format($row['subtotal']) : "-") . "</td>
         <td><img src='" . $image_path . "' alt='" . htmlspecialchars($row['pname']) . "' style='max-width:80px; height:auto;'></td>
     </tr>";
 }

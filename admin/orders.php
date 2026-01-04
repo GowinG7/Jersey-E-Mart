@@ -167,22 +167,12 @@ $res = $stmt->get_result();
                                 <?= $row['total_items'] ?>
                             </td>
                             <td>Rs.
-                                <?=number_format($row['grand_total']) ?>
+                                <?= number_format($row['grand_total']) ?>
                             </td>
                             <td>
                                 <?= $row['payment_option'] ?>
                             </td>
 
-
-                            <td>
-                                <?php if ($row['order_status'] === 'Delivered'): ?>
-                                    <button class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="order_status" data-value="Delivered">Delivered</button>
-                                <?php else: ?>
-                                    <button class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="order_status" data-value="Pending">Pending</button>
-                                <?php endif; ?>
-                            </td>
 
                             <td>
                                 <?php if ($row['payment_status'] === 'Completed'): ?>
@@ -191,6 +181,16 @@ $res = $stmt->get_result();
                                 <?php else: ?>
                                     <button class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
                                         data-type="payment_status" data-value="Pending">Pending</button>
+                                <?php endif; ?>
+                            </td>
+
+                            <td>
+                                <?php if ($row['order_status'] === 'Delivered'): ?>
+                                    <button class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="order_status" data-value="Delivered">Delivered</button>
+                                <?php else: ?>
+                                    <button class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="order_status" data-value="Pending">Pending</button>
                                 <?php endif; ?>
                             </td>
 
