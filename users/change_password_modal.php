@@ -1,9 +1,10 @@
-<!-- Profile management ko lagi user password change garna  -->
 <?php
+//  Profile management ko lagi user password change garna  
+
 session_start();
 require_once "../shared/dbconnect.php";
 
-// Must be logged in
+// check if user is logged in or not
 if (!isset($_SESSION['user_id'])) {
     echo "Unauthorized access.";
     exit;
@@ -19,7 +20,6 @@ $cnewpass = trim($_POST['confirm_password'] ?? '');
 $errors = [];
 
 /*  SERVER-SIDE VALIDATION  */
-
 if ($question === '' || $answer === '' || $newpass === '' || $cnewpass === '') {
     $errors[] = "All fields are required.";
 }
@@ -49,13 +49,11 @@ if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $newpass)) {
 }
 
 if (!empty($errors)) {
-    // Plain text response only
     echo implode("\n", $errors);
     exit;
 }
 
 /*  VERIFY SECURITY QUESTION  */
-
 $stmt = $conn->prepare("
     SELECT security_question, security_answer
     FROM user_creden
@@ -76,9 +74,37 @@ if (
     exit;
 }
 
-/*  UPDATE PASSWORD  */
+/*  CUSTOM PASSWORD HASH FUNCTIONS  */
+function generateSalt($length = 16)
+{
+    return bin2hex(random_bytes($length)); // 32 chars for 16 bytes
+}
 
-$hashedPassword = password_hash($newpass, PASSWORD_DEFAULT);
+function customHashPassword($password, $salt = null)
+{
+    if (!$salt) {
+        $salt = generateSalt();
+    }
+
+    $combined = $salt . $password;
+
+    // Key stretching (1000 rounds)
+    $hash = hash('sha256', $combined);
+    for ($i = 0; $i < 1000; $i++) {
+        $hash = hash('sha256', $hash . $combined);
+    }
+
+    return $salt . ':' . $hash;
+}
+
+function verifyCustomPassword($password, $stored)
+{
+    list($salt, $hash) = explode(':', $stored);
+    return customHashPassword($password, $salt) === $stored;
+}
+
+/*  UPDATE PASSWORD  */
+$hashedPassword = customHashPassword($newpass);
 
 $update = $conn->prepare("
     UPDATE user_creden
