@@ -35,10 +35,11 @@
       <h4>QN)Which payment methods are available?</h4>
       <p>Ans: Cash on Delivery and Online Payment (eSewa).</p>
       <h4>Can I cancel my order?</h4>
-      <p>Ans: To cancel the orders, usershave to contact admin within 2-5 hours.</p>
+      <p>Ans: To cancel the orders, users directly have to contact admin within 2-5 hours.</p>
 
       <h4>QN)Are the jerseys original?</h4>
-      <p>Ans: Yes, all jerseys are quality-checked before shipping. However, if any issues happen you can return or exchange within few hours of delivery.</p>
+      <p>Ans: Yes, all jerseys are quality-checked before shipping. However, if any issues happen you can return or
+        exchange within few hours of delivery.</p>
     </div>
   </div>
 
