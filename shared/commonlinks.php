@@ -11,22 +11,23 @@
 <!-- animate css cdn links (yo maile home page ko jersey page ma main text ma used grya xu) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
+<!-- The script element allows authors to include dynamic script and data blocks in their documents. The element does not represent content for the user. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const elements = document.querySelectorAll(".animate__animated");
+    document.addEventListener("DOMContentLoaded", function () {
+        const elements = document.querySelectorAll(".animate__animated");
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add("animate__fadeInDown");
-            } else {
-                entry.target.classList.remove("animate__fadeInDown");
-            }
-        });
-    }, { threshold: 0.3 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("animate__fadeInDown");
+                } else {
+                    entry.target.classList.remove("animate__fadeInDown");
+                }
+            });
+        }, { threshold: 0.3 });
 
-    elements.forEach(el => observer.observe(el));
-});
+        elements.forEach(el => observer.observe(el));
+    });
 </script>
-
-
