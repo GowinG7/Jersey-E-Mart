@@ -1,117 +1,326 @@
-<?php require('../shared/commonlinks.php'); ?>
+<?php
+session_start();
+require_once("../shared/dbconnect.php");
+require_once("../shared/commonlinks.php");
+
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+/* ===== OVERALL SUMMARY ===== */
+$totalOrders = $conn->query("SELECT COUNT(*) t FROM orders")->fetch_assoc()['t'];
+$totalUsers = $conn->query("SELECT COUNT(DISTINCT user_id) t FROM orders")->fetch_assoc()['t'];
+
+$paidData = $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders WHERE payment_status='Completed'")->fetch_assoc();
+$paidOrders = $paidData['c'];
+$totalPaidSales = $paidData['t'] ?? 0;
+
+$unpaidData = $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders WHERE payment_status='Pending'")->fetch_assoc();
+$unpaidOrders = $unpaidData['c'];
+$unpaidAmount = $unpaidData['t'] ?? 0;
+
+$codOrders = $conn->query("SELECT COUNT(*) t FROM orders WHERE payment_option='Cash on Delivery'")->fetch_assoc()['t'];
+$onlineOrders = $conn->query("SELECT COUNT(*) t FROM orders WHERE payment_option='Online Payment'")->fetch_assoc()['t'];
+
+/* ===== ORDER STATUS DATA ===== */
+$orderStatusLabels = [];
+$orderStatusData = [];
+$res = $conn->query("SELECT order_status, COUNT(*) t FROM orders GROUP BY order_status");
+while ($r = $res->fetch_assoc()) {
+    $orderStatusLabels[] = $r['order_status'];
+    $orderStatusData[] = $r['t'];
+}
+
+/* ===== PAYMENT STATUS DATA ===== */
+$paymentStatusLabels = ['Completed', 'Pending'];
+$paymentStatusData = [$paidOrders, $unpaidOrders];
+
+/* ===== PAYMENT METHOD DATA ===== */
+$paymentMethodLabels = ['Cash on Delivery', 'Online Payment'];
+$paymentMethodData = [$codOrders, $onlineOrders];
+
+/* ===== MONTH-WISE SUMMARY ===== */
+$monthLabels = [];
+$monthPaidOrders = [];
+$monthUnpaidOrders = [];
+$monthDeliveredOrders = [];
+$monthPendingOrders = [];
+$monthTotalAmount = [];
+
+$res = $conn->query(
+    "SELECT DATE_FORMAT(order_date,'%Y-%m') month,
+            SUM(CASE WHEN payment_status='Completed' THEN 1 ELSE 0 END) paid_count,
+            SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) unpaid_count,
+            SUM(CASE WHEN order_status='Delivered' THEN 1 ELSE 0 END) delivered_count,
+            SUM(CASE WHEN order_status='Pending' THEN 1 ELSE 0 END) pending_count,
+            SUM(grand_total) total_amount
+     FROM orders
+     GROUP BY month
+     ORDER BY month ASC"
+);
+
+while ($r = $res->fetch_assoc()) {
+    $monthLabels[] = $r['month'];
+    $monthPaidOrders[] = intval($r['paid_count']);
+    $monthUnpaidOrders[] = intval($r['unpaid_count']);
+    $monthDeliveredOrders[] = intval($r['delivered_count']);
+    $monthPendingOrders[] = intval($r['pending_count']);
+    $monthTotalAmount[] = floatval($r['total_amount']);
+}
+
+/* ===== YEAR-WISE SUMMARY ===== */
+$yearLabels = [];
+$yearPaidOrders = [];
+$yearUnpaidOrders = [];
+$yearDeliveredOrders = [];
+$yearPendingOrders = [];
+$yearTotalAmount = [];
+
+$res = $conn->query(
+    "SELECT YEAR(order_date) year,
+            SUM(CASE WHEN payment_status='Completed' THEN 1 ELSE 0 END) paid_count,
+            SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) unpaid_count,
+            SUM(CASE WHEN order_status='Delivered' THEN 1 ELSE 0 END) delivered_count,
+            SUM(CASE WHEN order_status='Pending' THEN 1 ELSE 0 END) pending_count,
+            SUM(grand_total) total_amount
+     FROM orders
+     GROUP BY year
+     ORDER BY year ASC"
+);
+
+while ($r = $res->fetch_assoc()) {
+    $yearLabels[] = $r['year'];
+    $yearPaidOrders[] = intval($r['paid_count']);
+    $yearUnpaidOrders[] = intval($r['unpaid_count']);
+    $yearDeliveredOrders[] = intval($r['delivered_count']);
+    $yearPendingOrders[] = intval($r['pending_count']);
+    $yearTotalAmount[] = floatval($r['total_amount']);
+}
+?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <title>Dashboard - Jersey E-Mart</title>
-    <link rel="stylesheet" href="css/header.css">
-</head>
+    <title>Admin Dashboard</title>
+    
+    <style>
+        body {
+            background: #f4f6f9;
+        }
 
-<body style="background-color: lightgray;">
+        .admin-content {
+            padding: 20px;
+            margin-top: 0px !important;
+        }
 
-    <!-- Header + Sidebar -->
-    <?php require('header.php'); ?>
+        .stat-card {
+            padding: 18px;
+            border-radius: 10px;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .15);
+        }
 
-    <div class="container-fluid" id="main-content">
-        <div class="row">
-            <div class="col-lg-10 ms-auto p-4 overflow-hidden">
+        .bg1 {
+            background: #00695c;
+        }
 
-                <h3 class="mb-4">Dashboard - Jersey E-Mart</h3>
+        .bg2 {
+            background: #283593;
+        }
 
-                <!-- Charts Row -->
-                <div class="row mb-4">
+        .bg3 {
+            background: #ef6c00;
+        }
 
-                    <!-- Bar Chart -->
-                    <div class="col-lg-8 mb-4">
-                        <div class="card shadow-sm border-0">
-                            <div class="card-header">
-                                <h5>Orders Overview (Weekly / Monthly / Yearly)</h5>
-                            </div>
-                            <div class="card-body" style="background-color: whitesmoke;">
-                                <canvas id="ordersBarChart" height="120"></canvas>
-                            </div>
-                        </div>
-                    </div>
+        .bg4 {
+            background: #c62828;
+        }
 
-                    <!-- Pie Chart -->
-                    <div class="col-lg-4 mb-4">
-                        <div class="card shadow-sm border-0">
-                            <div class="card-header">
-                                <h5>Order Status</h5>
-                            </div>
-                            <div class="card-body" style="background-color: whitesmoke;">
-                                <canvas id="ordersPieChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+        .bg5 {
+            background: #2e7d32;
+        }
 
-                </div>
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, .12);
+        }
 
-                <!-- Info Section -->
-                <div class="card shadow-sm border-0">
-                    <div class="card-body" style="background-color: whitesmoke;">
-                        <p class="mb-0">
-                            This dashboard shows a visual summary of jersey orders.
-                            The data displayed above is static and will be connected
-                            to the database after backend implementation.
-                        </p>
-                    </div>
-                </div>
+        .small-chart {
+            max-width: 260px;
+            margin: auto;
+        }
 
-            </div>
-        </div>
-    </div>
-
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        /* BAR CHART (STATIC DATA) */
-        const barCtx = document.getElementById('ordersBarChart').getContext('2d');
-
-        new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Jan', 'Feb', '2024', '2025'],
-                datasets: [{
-                    label: 'Number of Orders',
-                    data: [12, 18, 10, 22, 60, 75, 420, 510],
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+        options: {
+            plugins: {
+                legend: {
+                    position: 'top'
                 }
             }
+
+            ,
+            scales: {
+                x: {
+
+                    stacked: true,
+                    ticks: {
+                        maxRotation: 45, minRotation: 30
+                    }
+
+                    // rotate labels to save space
+                }
+
+                ,
+                y: {
+                    beginAtZero: true, stacked: true
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <?php include "header.php"; ?>
+
+    <div class="admin-content">
+
+        <h3 class="mb-4">Dashboard Overview</h3>
+
+        <!-- KPI CARDS -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg1">
+                    <p>Total Orders</p>
+                    <h4>
+                        <?= $totalOrders ?>
+                    </h4>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg2">
+                    <p>Total Customers</p>
+                    <h4>
+                        <?= $totalUsers ?>
+                    </h4>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg5">
+                    <p>Paid Sales</p>
+                    <h4>
+                        <?= $paidOrders ?> Orders<br>₹
+                        <?= number_format($totalPaidSales) ?>
+                    </h4>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg4">
+                    <p>Unpaid Orders</p>
+                    <h4>
+                        <?= $unpaidOrders ?> Orders<br>₹
+                        <?= number_format($unpaidAmount) ?>
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 1 -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">Order Status</div>
+                    <div class="card-body"><canvas id="orderStatusChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">Payment Status</div>
+                    <div class="card-body small-chart"><canvas id="paymentStatusChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">Payment Method</div>
+                    <div class="card-body"><canvas id="paymentMethodChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Month-wise Orders -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">Month-wise Orders</div>
+                <div class="card-body" style="overflow-x:auto;">
+                    <canvas id="monthOrdersChart" style="min-width:800px; height:200px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Year-wise Orders -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">Year-wise Orders</div>
+                <div class="card-body" style="overflow-x:auto;">
+                    <canvas id="yearOrdersChart" style="min-width:500px; height:200px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        /* ORDER STATUS BAR */
+        new Chart(orderStatusChart, {
+            type: 'bar',
+            data: { labels: <?= json_encode($orderStatusLabels) ?>, datasets: [{ data: <?= json_encode($orderStatusData) ?>, backgroundColor: ['#fbc02d', '#4caf50'] }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 
-        /* PIE CHART (STATIC DATA) */
-        const pieCtx = document.getElementById('ordersPieChart').getContext('2d');
-
-        new Chart(pieCtx, {
+        /* PAYMENT STATUS PIE */
+        new Chart(paymentStatusChart, {
             type: 'pie',
+            data: { labels: <?= json_encode($paymentStatusLabels) ?>, datasets: [{ data: <?= json_encode($paymentStatusData) ?>, backgroundColor: ['#2e7d32', '#c62828'] }] },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+
+        /* PAYMENT METHOD BAR */
+        new Chart(paymentMethodChart, {
+            type: 'bar',
+            data: { labels: <?= json_encode($paymentMethodLabels) ?>, datasets: [{ data: <?= json_encode($paymentMethodData) ?>, backgroundColor: ['#1565c0', '#ef6c00'] }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        /* MONTH-WISE ORDERS BAR */
+        new Chart(monthOrdersChart, {
+            type: 'bar',
             data: {
-                labels: ['Pending Orders', 'Delivered Orders', 'Cancelled Orders'],
-                datasets: [{
-                    data: [45, 120, 15],
-                    backgroundColor: [
-                        'rgba(255, 206, 86, 0.8)',
-                        'rgba(75, 192, 192, 0.8)',
-                        'rgba(255, 99, 132, 0.8)'
-                    ]
-                }]
+                labels: <?= json_encode($monthLabels) ?>,
+                datasets: [
+                    { label: 'Paid', data: <?= json_encode($monthPaidOrders) ?>, backgroundColor: '#2e7d32' },
+                    { label: 'Unpaid', data: <?= json_encode($monthUnpaidOrders) ?>, backgroundColor: '#c62828' },
+                    { label: 'Delivered', data: <?= json_encode($monthDeliveredOrders) ?>, backgroundColor: '#4caf50' },
+                    { label: 'Pending', data: <?= json_encode($monthPendingOrders) ?>, backgroundColor: '#ff9800' }
+                ]
             },
-            options: {
-                responsive: true
-            }
+            options: { plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        /* YEAR-WISE ORDERS BAR */
+        new Chart(yearOrdersChart, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($yearLabels) ?>,
+                datasets: [
+                    { label: 'Paid', data: <?= json_encode($yearPaidOrders) ?>, backgroundColor: '#2e7d32' },
+                    { label: 'Unpaid', data: <?= json_encode($yearUnpaidOrders) ?>, backgroundColor: '#c62828' },
+                    { label: 'Delivered', data: <?= json_encode($yearDeliveredOrders) ?>, backgroundColor: '#4caf50' },
+                    { label: 'Pending', data: <?= json_encode($yearPendingOrders) ?>, backgroundColor: '#ff9800' }
+                ]
+            },
+            options: { plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
         });
     </script>
 
