@@ -50,8 +50,7 @@ $shipping_cost = 150;
     <title>Invoice | Admin Panel</title>
     <style>
         body {
-            background: #eef2f4;
-            font-family: Arial, sans-serif;
+            background: #e9fffa;
         }
 
         .container {
@@ -61,7 +60,7 @@ $shipping_cost = 150;
         }
 
         .order-card {
-            background: #fff;
+            background: whitesmoke;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, .1);
@@ -82,7 +81,7 @@ $shipping_cost = 150;
         .product-card {
             display: flex;
             gap: 15px;
-            background: #f9f9f9;
+            background: white;
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 10px;
@@ -141,7 +140,8 @@ $shipping_cost = 150;
 
         <div class="order-card">
             <div class="order-header">Order #<?php echo $order['order_id']; ?> -
-                <?php echo htmlspecialchars($order['name']); ?></div>
+                <?php echo htmlspecialchars($order['name']); ?>
+            </div>
             <div class="order-info">
                 <strong>Order Date:</strong> <?php echo $order['order_date']; ?> |
                 <strong>Payment:</strong> <?php echo htmlspecialchars($order['payment_option']); ?>
@@ -154,25 +154,64 @@ $shipping_cost = 150;
             </div>
 
             <?php foreach ($items as $it):
-                $discount = $it['base_price'] - $it['final_price'];
+                $discountcheck = $it['base_price'] - $it['final_price'];
+                if ($discountcheck > 0) {
+                    $discount = "Rs." . $discountcheck;
+                } else {
+                    $discount = "No Discount";
+                }
+
                 $image_path = !empty($it['product_image']) ? '../shared/products/' . htmlspecialchars($it['product_image']) : 'images/placeholder.png';
                 ?>
                 <div class="product-card">
                     <img src="<?php echo $image_path; ?>" class="product-img">
+
                     <div class="product-info">
-                        <p><span class="label">Product:</span> <?php echo htmlspecialchars($it['pname']); ?></p>
-                        <p><span class="label">Category:</span> <?php echo htmlspecialchars($it['category']); ?> | <span
-                                class="label">Quality:</span> <?php echo htmlspecialchars($it['quality']); ?></p>
-                        <p><span class="label">Size:</span> <?php echo htmlspecialchars($it['jersey_size']); ?> | <span
-                                class="label">Qty:</span> <?php echo intval($it['quantity']); ?></p>
-                        <p><span class="label">Base Price:</span> RS. <?php echo number_format($it['base_price'], 2); ?> |
-                            <span class="label">Discount:</span> RS. <?php echo number_format($discount); ?></p>
-                        <p><span class="label">Print Name:</span> <?php echo htmlspecialchars($it['print_name']); ?> | <span
-                                class="label">Print Number:</span> <?php echo htmlspecialchars($it['print_number']); ?></p>
-                        <p><span class="label">Print Cost:</span> RS. <?php echo number_format($it['print_cost'], 2); ?> |
-                            <span class="label">Final Price:</span> RS. <?php echo number_format($it['final_price'], 2); ?></p>
-                        <p><span class="label">Subtotal:</span> RS. <?php echo number_format($it['subtotal'], 2); ?></p>
+                        <p><span class="label">Product:</span>
+                            <?php echo htmlspecialchars($it['pname']); ?>
+                        </p>
+                        <p>
+                            <span class="label">Category:</span>
+                            <?php echo htmlspecialchars($it['category']); ?> |
+                            <span class="label">Quality:</span>
+                            <?php echo htmlspecialchars($it['quality']); ?>
+                        </p>
+                        <p>
+                            <span class="label">Size:</span>
+                            <?php echo htmlspecialchars($it['jersey_size']); ?> |
+                            <span class="label">Qty:</span>
+                            <?php echo intval($it['quantity']); ?>
+                        </p>
+                        <p>
+                            <span class="label">Base Price:</span> RS.
+                            <?php echo number_format($it['base_price'], 2); ?> |
+                            <span class="label">Discount:</span>
+                            <?php echo $discount; ?>
+                        </p>
+                        <p>
+                            <?php if (!empty($it['print_name'])): ?>
+                                <span class="label">Print Name:</span>
+                                <?php echo htmlspecialchars($it['print_name']); ?>
+                            <?php endif; ?>
+
+                            <?php if (!empty($it['print_number']) && $it['print_number'] != 0): ?>
+                                | <span class="label">Print Number:</span>
+                                <?php echo htmlspecialchars($it['print_number']); ?>
+                            <?php endif; ?>
+                        </p>
+                        <p>
+                            <span class="label">Print Cost:</span>
+                            <?php echo ($it['print_cost'] > 0) ? 'RS. ' . number_format($it['print_cost'], 2) : 'No Print'; ?>
+                            |
+                            <span class="label">Final Price:</span> RS.
+                            <?php echo number_format($it['final_price'], 2); ?>
+                        </p>
+                        <p><span class="label">Subtotal:</span> RS.
+                            <?php echo number_format($it['subtotal'], 2); ?>
+                        </p>
                     </div>
+
+
                 </div>
             <?php endforeach; ?>
 
