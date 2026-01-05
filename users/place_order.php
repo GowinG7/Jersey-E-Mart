@@ -2,13 +2,8 @@
 session_start();
 require_once "../shared/dbconnect.php";
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: loginsignup/login.php");
-    exit();
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: cart.php");
+if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: displaycart.php");
     exit();
 }
 
@@ -18,119 +13,122 @@ $location = trim($_POST['location']);
 $contact = trim($_POST['contact']);
 $payment_option = $_POST['payment_option'];
 $grand_total = intval($_POST['grand_total']);
-$shipping_cost = 150; // flat shipping cost
+$shipping_cost = 150;
 
-// Basic validation
-if (
-    $name === "" || $location === "" || $contact === "" ||
-    !in_array($payment_option, ['Cash on Delivery', 'Online Payment'])
-) {
+// Validate input
+if ($name === "" || $location === "" || $contact === "" || !in_array($payment_option, ['Cash on Delivery', 'Online Payment'])) {
     $_SESSION['alert'] = "Invalid order data.";
     $_SESSION['alert_type'] = "danger";
     header("Location: order_form.php");
     exit();
 }
 
-// Start transaction
+// Get cart items
+$stmt = $conn->prepare("
+    SELECT product_id, pname, category, jersey_size, quality, base_price, 
+           print_name, print_number, print_cost, quantity, price_after_discount AS final_price, image 
+    FROM cart_items 
+    WHERE user_id=?
+");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$cart_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+if (empty($cart_items)) {
+    $_SESSION['alert'] = "Your cart is empty.";
+    $_SESSION['alert_type'] = "danger";
+    header("Location: displaycart.php");
+    exit();
+}
+
+// Check stock
+foreach ($cart_items as $item) {
+    $stmt = $conn->prepare("SELECT stock FROM product_sizes WHERE product_id=? AND size=?");
+    $stmt->bind_param("is", $item['product_id'], $item['jersey_size']);
+    $stmt->execute();
+    $stmt->bind_result($stock);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($stock < $item['quantity']) {
+        $_SESSION['alert'] = "Insufficient stock for {$item['pname']} (Size: {$item['jersey_size']})";
+        $_SESSION['alert_type'] = "danger";
+        header("Location: displaycart.php");
+        exit();
+    }
+}
+
+// Begin transaction
 $conn->begin_transaction();
 
 try {
-    // Order default statuses
-    $payment_status = 'Pending';
-    $order_status = 'Pending';
-
-    // Insert main order
+    // Insert order
     $stmt = $conn->prepare("
-        INSERT INTO orders 
-        (user_id, name, location, grand_total, payment_option, payment_status, order_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO orders (user_id, name, location, grand_total, payment_option, payment_status, order_status) 
+        VALUES (?, ?, ?, ?, ?, 'Pending', 'Pending')
     ");
-    $stmt->bind_param(
-        "ississs",
-        $user_id,
-        $name,
-        $location,
-        $grand_total,
-        $payment_option,
-        $payment_status,
-        $order_status
-    );
+    $stmt->bind_param("issis", $user_id, $name, $location, $grand_total, $payment_option);
     $stmt->execute();
     $order_id = $stmt->insert_id;
     $stmt->close();
 
-    // Fetch cart items
-    $stmt = $conn->prepare("
-        SELECT product_id, pname, category, jersey_size, quality, base_price,
-               print_name, print_number, print_cost,
-               quantity, price_after_discount AS final_price, image
-        FROM cart_items
-        WHERE user_id = ?
-    ");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    // Prepare order_items insert
+    // Prepare order_items insert and stock update
     $insert_item = $conn->prepare("
         INSERT INTO order_items 
-        (order_id, product_id, pname, category, jersey_size, quality, base_price,
-         print_name, print_number, print_cost, quantity, final_price, subtotal, shipping, product_image)
+        (order_id, product_id, pname, category, jersey_size, quality, base_price, print_name, print_number, print_cost, quantity, final_price, subtotal, shipping, product_image) 
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ");
-
-    // Prepare stock update
     $update_stock = $conn->prepare("
-        UPDATE product_sizes
-        SET stock = stock - ?
-        WHERE product_id = ? AND size = ? AND stock >= ?
+        UPDATE product_sizes SET stock = stock - ? 
+        WHERE product_id=? AND size=? AND stock >= ?
     ");
 
-    while ($it = $res->fetch_assoc()) {
-        $qty = (int) $it['quantity'];
-        $unit_price = floatval($it['final_price']);
-        $subtotal = $unit_price * $qty; // Only item subtotal
-        $jersey_size = $it['jersey_size'];
+    foreach ($cart_items as $item) {
+        $qty = $item['quantity'];
+        $subtotal = $item['final_price'] * $qty;
 
-        // Deduct stock once
-        $update_stock->bind_param("iisi", $qty, $it['product_id'], $jersey_size, $qty);
-        $update_stock->execute();
+        // Insert into order_items (include shipping)
+  $insert_item->bind_param(
+    "iissssisiiiiiis",
+    $order_id,
+    $item['product_id'],
+    $item['pname'],
+    $item['category'],
+    $item['jersey_size'],
+    $item['quality'],
+    $item['base_price'],
+    $item['print_name'],
+    $item['print_number'],
+    $item['print_cost'],
+    $qty,
+    $item['final_price'],
+    $subtotal,
+    $shipping_cost,
+    $item['image']
+);
 
-        if ($update_stock->affected_rows === 0) {
-            throw new Exception("Insufficient stock for {$it['pname']} (Size: $jersey_size)");
+        $insert_item->execute();
+        if ($insert_item->affected_rows === 0) {
+            throw new Exception("Failed to insert item {$item['pname']}");
         }
 
-        // Insert order item
-        $insert_item->bind_param(
-            "iissssissiidiss",
-            $order_id,
-            $it['product_id'],
-            $it['pname'],
-            $it['category'],
-            $jersey_size,
-            $it['quality'],
-            $it['base_price'],
-            $it['print_name'],
-            $it['print_number'],
-            $it['print_cost'],
-            $qty,
-            $unit_price,
-            $subtotal,
-            $shipping_cost, // stored for reference per order item
-            $it['image']
-        );
-        $insert_item->execute();
+        // Reduce stock
+        $update_stock->bind_param("iisi", $qty, $item['product_id'], $item['jersey_size'], $qty);
+        $update_stock->execute();
+        if ($update_stock->affected_rows === 0) {
+            throw new Exception("Stock update failed for {$item['pname']} (Size: {$item['jersey_size']})");
+        }
     }
 
     $insert_item->close();
     $update_stock->close();
-    $stmt->close();
 
     // Clear cart
-    $del = $conn->prepare("DELETE FROM cart_items WHERE user_id = ?");
-    $del->bind_param("i", $user_id);
-    $del->execute();
-    $del->close();
+    $stmt = $conn->prepare("DELETE FROM cart_items WHERE user_id=?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $stmt->close();
 
     $conn->commit();
 
@@ -139,9 +137,9 @@ try {
 
 } catch (Exception $e) {
     $conn->rollback();
-    $_SESSION['alert'] = $e->getMessage();
+    $_SESSION['alert'] = "Order failed: " . $e->getMessage();
     $_SESSION['alert_type'] = "danger";
-    header("Location: order_form.php");
+    header("Location: displaycart.php");
     exit();
 }
 ?>
