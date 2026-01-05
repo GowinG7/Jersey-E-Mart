@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
   exit();
 }
 
-$shipping_cost = 150; 
+$shipping_cost = 150; //flat shipping cost(per each order not per item)
 
 $user_id = $_SESSION['user_id'];
 
@@ -65,13 +65,31 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : '';
             <label>Contact phone</label>
             <input type="text" name="contact" class="form-control" required>
           </div>
+
           <div class="mb-3">
-            <label>Payment option</label>
-            <select name="payment_option" class="form-select" required>
-              <option value="Cash on Delivery">Cash on Delivery</option>
-              <option value="Online Payment">Online Payment</option>
-            </select>
+            <label class="form-label fw-semibold">Payment Option</label>
+
+            <!-- Cash on Delivery -->
+            <div class="form-check border rounded p-3 mb-2">
+              <input class="form-check-input" type="radio" name="payment_option" id="cod" value="Cash on Delivery"
+                checked>
+              <label class="form-check-label fw-bold" for="cod" >
+                <b style="color:gray;" >Cash on Delivery</b>
+              </label>
+            </div>
+
+            <!-- eSewa Online Payment -->
+            <div class="form-check border rounded p-3 d-flex align-items-center gap-3">
+              <input class="form-check-input" type="radio" name="payment_option" id="esewa" value="Online Payment">
+              <label class="form-check-label d-flex align-items-center gap-2" for="esewa">
+                <img src="images/esewa.png" alt="eSewa" style="height:55px;object-fit:contain;">
+                <span class="fw-bold">
+                  <h4 style="color:green;">eSewa</h4>
+                </span>
+              </label>
+            </div>
           </div>
+
           <input type="hidden" name="grand_total" value="<?php echo intval($grand_total); ?>">
           <button type="submit" class="btn btn-success w-100">Place order (Rs
             <?php echo number_format($grand_total); ?>)</button>
