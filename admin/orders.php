@@ -56,7 +56,12 @@ $sql .= " GROUP BY o.order_id
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+    $bind_params = array_merge([$types], $params);
+    $refs = [];
+    foreach ($bind_params as $k => $v) {
+        $refs[$k] = & $bind_params[$k];
+    }
+    call_user_func_array([$stmt, 'bind_param'], $refs);
 }
 $stmt->execute();
 $res = $stmt->get_result();
@@ -126,6 +131,8 @@ $res = $stmt->get_result();
             </label>
             <button type="submit" class="btn btn-sm btn-primary">Search</button>
             <a href="orders.php" class="btn btn-sm btn-secondary">Reset</a>
+            <!-- Link to user orders summary (preserves date filters) -->
+            <a href="user_orders.php?start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="btn btn-sm btn-info">View Users Summary</a>
         </form>
 
         <table class="table table-bordered table-striped">

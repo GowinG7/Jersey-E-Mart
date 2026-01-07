@@ -1,4 +1,4 @@
-<!-- User Profile management ko lagi -->
+<!-- User Profile management -->
 <?php
 session_start();
 require_once "../shared/dbconnect.php";
@@ -10,115 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$success = $error = "";
-
-// UPDATE PROFILE 
-if (isset($_POST['update_profile'])) {
-
-    $name = trim($_POST['name']);
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
-    $security_question = trim($_POST['security_question']);
-    $security_answer = trim($_POST['security_answer']);
-
-    $errors = [];
-
-    /* ---------- VALIDATION (SAME AS SIGNUP JS) ---------- */
-
-    // Full name: letters only, spaces allowed between words
-    if (!preg_match('/^[A-Za-z]+( [A-Za-z]+)*$/', $name)) {
-        $errors[] = "Name should only contain letters, and spaces are allowed between words but not at the start.";
-    }
-
-    // Username: allowed chars + minimum length 4
-    if (!preg_match('/^[a-zA-Z0-9_@]+$/', $username) || strlen($username) < 4) {
-        $errors[] = "Username must have atleast 4 character and can only contain letters, numbers, underscores, and the @ symbol";
-    }
-
-    // Email: same as signup JS
-    if (!preg_match('/^[a-z0-9.]+@[a-z0-9.-]+\.[a-z]{2,}$/', $email)) {
-        $errors[] = "Email must contain only letters (a-z), numbers (0-9), and periods (.) before the @, and must have a valid domain.";
-    }
-
-    // Phone: length only (same as signup)
-    if (strlen(trim($phone)) < 10) {
-        $errors[] = "Phone number must be at least 10 digits";
-    }
-
-    // Security question
-    if ($security_question === '') {
-        $errors[] = "Security question cannot be empty.";
-    }
-
-    // Security answer
-    if (trim($security_answer) === '') {
-        $errors[] = "Security answer cannot be empty.";
-    }
-
-
-    /* ---------- UNIQUE USERNAME CHECK ---------- */
-    $stmt = $conn->prepare("
-        SELECT id FROM user_creden 
-        WHERE username = ? AND id != ?
-        LIMIT 1
-    ");
-    $stmt->bind_param("si", $username, $user_id);
-    $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
-        $errors[] = "Username already exists. Please choose another.";
-    }
-    $stmt->close();
-
-    /* ---------- UNIQUE EMAIL CHECK ---------- */
-    $stmt = $conn->prepare("
-        SELECT id FROM user_creden 
-        WHERE email = ? AND id != ?
-        LIMIT 1
-    ");
-    $stmt->bind_param("si", $email, $user_id);
-    $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
-        $errors[] = "Email already exists. Please choose another.";
-    }
-    $stmt->close();
-
-    /* ---------- HANDLE ERRORS ---------- */
-    if (!empty($errors)) {
-        $_SESSION['profile_error'] = implode(" ", $errors);
-        header("Location: profile.php");
-        exit();
-    }
-
-    /* ---------- UPDATE PROFILE ---------- */
-    $stmt = $conn->prepare("
-        UPDATE user_creden 
-        SET name=?, username=?, email=?, phone=?, security_question=?, security_answer=?
-        WHERE id=?
-    ");
-    $stmt->bind_param(
-        "ssssssi",
-        $name,
-        $username,
-        $email,
-        $phone,
-        $security_question,
-        $security_answer,
-        $user_id
-    );
-
-    if ($stmt->execute()) {
-        $_SESSION['profile_success'] = "Profile updated successfully.";
-        $_SESSION['username'] = $username;
-    } else {
-        $_SESSION['profile_error'] = "Failed to update profile.";
-    }
-
-    $stmt->close();
-    header("Location: profile.php");
-    exit();
-}
-
 
 //FETCH USER DATA 
 $stmt = $conn->prepare("
@@ -131,15 +22,43 @@ $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Consume any flash messages set during POST (Post-Redirect-Get)
-if (isset($_SESSION['profile_success'])) {
-    $success = $_SESSION['profile_success'];
-    unset($_SESSION['profile_success']);
+// ----- Orders (simplified) -----
+$startDate = $_GET['start_date'] ?? '';
+$endDate = $_GET['end_date'] ?? '';
+
+// Validate date inputs (YYYY-MM-DD) to avoid SQL injection
+$startDateSafe = '';
+$endDateSafe = '';
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate))
+    $startDateSafe = $startDate;
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate))
+    $endDateSafe = $endDate;
+
+$whereSql = "WHERE user_id = " . (int) $user_id;
+if ($startDateSafe) {
+    $whereSql .= " AND order_date >= '" . $conn->real_escape_string($startDateSafe) . " 00:00:00'";
 }
-if (isset($_SESSION['profile_error'])) {
-    $error = $_SESSION['profile_error'];
-    unset($_SESSION['profile_error']);
+if ($endDateSafe) {
+    $whereSql .= " AND order_date <= '" . $conn->real_escape_string($endDateSafe) . " 23:59:59'";
 }
+
+// Summary
+$summarySql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(grand_total),0) AS total_amount FROM orders $whereSql";
+$res = $conn->query($summarySql);
+$summary = $res ? $res->fetch_assoc() : ['cnt' => 0, 'total_amount' => 0];
+
+$totalOrders = (int) $summary['cnt'];
+$totalAmount = $summary['total_amount'];
+
+// Orders list
+$listSql = "SELECT order_id, payment_status, order_status, order_date, 
+               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = orders.order_id) AS total_items,
+               (SELECT pname FROM order_items oi WHERE oi.order_id = orders.order_id LIMIT 1) AS first_item_name
+            FROM orders $whereSql
+            ORDER BY order_date DESC";
+
+$orders_res = $conn->query($listSql);
+
 ?>
 
 <!DOCTYPE html>
@@ -148,237 +67,117 @@ if (isset($_SESSION['profile_error'])) {
 <head>
     <title>User Profile</title>
     <style>
+        /* Minimal profile styles */
         body {
             background: #e0f4f2;
-            font-family: 'Segoe UI', sans-serif;
-            color: #2d5d58;
+            font-family: Segoe UI, SegoeUI, Arial, sans-serif;
+            color: #234;
         }
 
         .profile-card {
-            max-width: 650px;
-            margin: 50px auto;
-            background: linear-gradient(145deg, #ffffff, #cdeeea);
-            padding: 30px;
-            border-radius: 16px;
-        }
-
-        h3 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #1c6059;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background: #fff
         }
 
         .row {
             display: flex;
-            margin-bottom: 14px;
-            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px
         }
 
         .label {
-            width: 40%;
-            font-weight: 600;
+            width: 35%;
+            font-weight: 600
         }
 
         .value {
-            width: 60%;
+            flex: 1
         }
 
         input,
         select {
             width: 100%;
             padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #a9d6d1;
-        }
-
-        .status {
-            font-weight: 600;
-            color:
-                <?= $user['is_verified'] ? '#1a7f37' : '#b42318' ?>
-            ;
+            border: 1px solid #cfe8e5;
+            border-radius: 6px
         }
 
         .msg {
-            text-align: center;
-            margin-bottom: 15px;
             font-weight: 600;
+            text-align: center;
+            margin-bottom: 12px
         }
 
         .success {
-            color: #1a7f37;
+            color: #1a7f37
         }
 
         .error {
-            color: #b42318;
+            color: #b42318
         }
 
-        /* Normalize button appearance and provide polished styles */
         button {
-            -webkit-appearance: none;
-            appearance: none;
-            border: none;
             background: #1c6059;
-            color: white;
-            padding: 10px 25px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.15s ease, color 0.15s ease, transform 0.06s ease;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 0;
+            cursor: pointer
         }
 
-        button:hover {
-            background: #317770ff;
-            color: white;
-        }
-
-        /* Specific style for the Change Password button */
         .change-password {
-            background: #c0392b;
-            border-radius: 20px;
-            /* larger radius for emphasis */
-            padding: 10px 22px;
-            color: #fff;
+            background: #c0392b
         }
 
-        .change-password:hover {
-            filter: brightness(0.95);
-            color: #fff;
-        }
-
-        /* Specific style for the Update Profile button */
         .update-profile {
-            background: #1c6059;
-            /* site primary */
-            border-radius: 20px;
-            padding: 10px 26px;
-            color: #fff;
-            font-weight: 600;
+            background: #1c6059
         }
 
-        .update-profile:hover {
-            filter: brightness(0.95);
-            color: #fff;
-        }
-
-        /*MODAL*/
+        /* modal */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, .55);
-            justify-content: center;
+            background: rgba(0, 0, 0, .5);
             align-items: center;
-            z-index: 9999;
+            justify-content: center
         }
 
         .modal-box {
             background: #fff;
-            padding: 25px;
-            border-radius: 14px;
-            width: 360px;
-        }
-
-        .modal-box h4 {
-            text-align: center;
-            margin-bottom: 15px;
-            color: #1c6059;
-        }
-
-        .modal-box input,
-        .modal-box select {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-        }
-
-        /* Modal action buttons (side-by-side on larger screens) */
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .modal-actions .modal-confirm,
-        .modal-actions .modal-cancel {
-            flex: 1;
-            padding: 10px;
+            padding: 18px;
             border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease, color 0.12s ease;
+            width: 340px
         }
 
-        /* Primary confirm button */
-        .modal-actions .modal-confirm {
-            background: #1c6059;
-            /* base */
-            color: #fff;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px
         }
 
-        .modal-actions .modal-confirm:hover {
-            background: #14543b;
-            /* darker on hover */
-            box-shadow: 0 8px 18px rgba(20, 84, 59, 0.18);
-            transform: translateY(-2px);
-        }
-
-        .modal-actions .modal-confirm:focus {
-            outline: 3px solid rgba(20, 84, 59, 0.14);
-            outline-offset: 2px;
-        }
-
-        .modal-actions .modal-confirm:active {
-            background: #0f4234;
-            transform: translateY(0);
-        }
-
-        /* Secondary cancel button */
-        .modal-actions .modal-cancel {
-            background: #ffffff;
-            /* base */
-            color: #1c6059;
-            border: 1px solid #cdeeea;
-        }
-
-        .modal-actions .modal-cancel:hover {
-            background: #eef7f5;
-            /* soft pale green */
-            color: #123f38;
-            box-shadow: 0 8px 18px rgba(20, 84, 59, 0.06);
-            transform: translateY(-2px);
-        }
-
-        .modal-actions .modal-cancel:focus {
-            outline: 3px solid rgba(20, 84, 59, 0.06);
-            outline-offset: 2px;
-        }
-
-        .modal-actions .modal-cancel:active {
-            background: #e6f3f1;
-            transform: translateY(0);
-        }
-
-        @media (max-width: 480px) {
-            .modal-actions {
-                flex-direction: column;
-            }
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #eee;
+            text-align: left
         }
     </style>
 </head>
 
-<body>
+<body style="background-color: #e0f4f2;">
 
     <?php include_once 'header.php'; ?>
 
     <div class="profile-card">
-        <h3>User Profile</h3>
+       
 
-        <?php if ($success): ?>
-            <div class="msg success"><?= $success ?></div><?php endif; ?>
-        <?php if ($error): ?>
-            <div class="msg error"><?= $error ?></div><?php endif; ?>
+        <div id="profileMsg" class="msg" style="display:none"></div>
 
-        <form method="POST" id="profileForm">
+        <form id="profileForm">
 
             <div class="row">
                 <div class="label">Full Name</div>
@@ -468,9 +267,211 @@ if (isset($_SESSION['profile_error'])) {
         </div>
     </div>
 
-    <?php include_once 'footer.php'; ?>
+    <!-- USER ORDERS SECTION -->
+    <div class="profile-card" style="margin-top:25px;">
+        <h3>My Orders</h3>
 
-   <script src="js/profile.js"></script>
+        <form method="get" class="search-form"
+            style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label style="display:flex;gap:6px;align-items:center">Start Date: <input type="date" name="start_date"
+                    value="<?= htmlspecialchars($startDate) ?>"></label>
+            <label style="display:flex;gap:6px;align-items:center">End Date: <input type="date" name="end_date"
+                    value="<?= htmlspecialchars($endDate) ?>"></label>
+            <div style="margin-left:auto">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="profile.php" class="btn btn-secondary" style="margin-left:8px;">Reset</a>
+            </div>
+        </form>
+
+        <div
+            style="margin-bottom:12px;padding:10px;border-radius:8px;background:#f4f9f8;border:1px solid #e6f3f1;display:flex;gap:12px;align-items:center;">
+            <div><strong>Total orders:</strong> <?= $totalOrders ?></div>
+            <div><strong>Total amount:</strong> Rs. <?= number_format($totalAmount) ?></div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>S.N.</th>
+                        <th>Order No</th>
+                        <th>Order Items</th>
+                        <th>Payment Status</th>
+                        <th>Order Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($orders_res->num_rows === 0): ?>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No orders found for selected filters</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php $sn = 1;
+                        while ($o = $orders_res->fetch_assoc()): ?>
+                            <tr id="orderRow<?= $o['order_id'] ?>">
+                                <td><?= $sn++ ?></td>
+                                <td>Order #<?= $o['order_id'] ?> <br><a href="#" class="btn btn-sm btn-outline-info view-order"
+                                        data-order="<?= $o['order_id'] ?>" style="margin-top:6px;display:inline-block">View</a>
+                                </td>
+                                <td><?= $o['total_items'] ?>
+                                    item<?= $o['total_items'] > 1 ? 's' : '' ?><?= !empty($o['first_item_name']) ? ': ' . htmlspecialchars($o['first_item_name']) : '' ?>
+                                </td>
+                                <td><?= htmlspecialchars($o['payment_status']) ?></td>
+                                <td><?= htmlspecialchars($o['order_status']) ?></td>
+                                <td><?= date('Y-m-d H:i', strtotime($o['order_date'])) ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ORDER DETAILS MODAL -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:760px;width:95%">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4 style="margin:0">Order Details</h4>
+                <button onclick="closeOrderModal()" class="modal-cancel">Close</button>
+            </div>
+            <div id="orderModalBody">Loading...</div>
+        </div>
+    </div>
+
+    <script src="js/profile.js"></script>
+    <script>
+        // AJAX Profile Update - No page reload
+        document.getElementById('profileForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('update_profile', '1');
+
+            const msgEl = document.getElementById('profileMsg');
+            msgEl.style.display = 'none';
+
+            fetch('profile_change_pass.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    if (msg.trim() === 'success') {
+                        msgEl.className = 'msg success';
+                        msgEl.textContent = 'Profile updated successfully.';
+                        msgEl.style.display = 'block';
+
+                        // Auto-dismiss after 4 seconds
+                        setTimeout(() => {
+                            msgEl.style.transition = 'opacity 0.45s ease, max-height 0.45s ease, margin 0.45s ease';
+                            msgEl.style.opacity = '0';
+                            msgEl.style.maxHeight = '0';
+                            msgEl.style.margin = '0';
+                            setTimeout(() => {
+                                msgEl.style.display = 'none';
+                                msgEl.style.transition = '';
+                                msgEl.style.opacity = '';
+                                msgEl.style.maxHeight = '';
+                                msgEl.style.margin = '';
+                            }, 500);
+                        }, 4000);
+                    } else if (msg.trim() === 'No changes detected') {
+                        msgEl.className = 'msg';
+                        msgEl.style.color = '#856404';
+                        msgEl.style.backgroundColor = '#fff3cd';
+                        msgEl.style.borderColor = '#ffeeba';
+                        msgEl.textContent = 'No changes made to update.';
+                        msgEl.style.display = 'block';
+
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            msgEl.style.transition = 'opacity 0.45s ease';
+                            msgEl.style.opacity = '0';
+                            setTimeout(() => {
+                                msgEl.style.display = 'none';
+                                msgEl.style.transition = '';
+                                msgEl.style.opacity = '';
+                            }, 500);
+                        }, 3000);
+                    } else {
+                        msgEl.className = 'msg error';
+                        msgEl.textContent = msg;
+                        msgEl.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    msgEl.className = 'msg error';
+                    msgEl.textContent = 'Failed to update profile. Please try again.';
+                    msgEl.style.display = 'block';
+                });
+        });
+
+        // Order modal logic
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.matches('.view-order')) {
+                e.preventDefault();
+                const id = e.target.dataset.order;
+                const body = new URLSearchParams();
+                body.append('action', 'get_order_details');
+                body.append('order_id', id);
+                fetch('profile_change_pass.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Could not fetch order');
+                        return res.text();
+                    })
+                    .then(html => {
+                        document.getElementById('orderModalBody').innerHTML = html;
+                        document.getElementById('orderModal').style.display = 'flex';
+                    })
+                    .catch(err => {
+                        document.getElementById('orderModalBody').innerHTML = '<div class="msg error">' + err.message + '</div>';
+                        document.getElementById('orderModal').style.display = 'flex';
+                    });
+            }
+        });
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        // close on overlay click
+        document.getElementById('orderModal').addEventListener('click', function (e) { if (e.target === this) closeOrderModal(); });
+
+        // AJAX Date Search - No page reload
+        document.querySelector('.search-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const params = new URLSearchParams(formData);
+
+            fetch('profile_change_pass.php?action=get_orders&' + params.toString())
+                .then(res => res.json())
+                .then(data => {
+                    // Update summary stats
+                    document.querySelectorAll('.profile-card')[1].innerHTML = '<h3>My Orders</h3><form method="get" class="search-form" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><label style="display:flex;gap:6px;align-items:center">Start Date: <input type="date" name="start_date" value="' + (formData.get('start_date') || '') + '"></label><label style="display:flex;gap:6px;align-items:center">End Date: <input type="date" name="end_date" value="' + (formData.get('end_date') || '') + '"></label><div style="margin-left:auto"><button type="submit" class="btn btn-primary">Search</button><a href="profile.php" class="btn btn-secondary" style="margin-left:8px;">Reset</a></div></form><div style="margin-bottom:12px;padding:10px;border-radius:8px;background:#f4f9f8;border:1px solid #e6f3f1;display:flex;gap:12px;align-items:center;"><div><strong>Total orders:</strong> ' + data.totalOrders + '</div><div><strong>Total amount:</strong> Rs. ' + data.totalAmount + '</div></div><div style="overflow-x:auto"><table class="table table-bordered table-striped"><thead class="table-dark"><tr><th>S.N.</th><th>Order No</th><th>Order Items</th><th>Payment Status</th><th>Order Status</th><th>Date</th></tr></thead><tbody>' + data.tableHtml + '</tbody></table></div>';
+
+                    // Update URL without reload
+                    const startDate = formData.get('start_date');
+                    const endDate = formData.get('end_date');
+                    let newUrl = 'profile.php';
+                    if (startDate || endDate) {
+                        newUrl += '?';
+                        if (startDate) newUrl += 'start_date=' + startDate + '&';
+                        if (endDate) newUrl += 'end_date=' + endDate;
+                        newUrl = newUrl.replace(/&$/, '');
+                    }
+                    history.pushState({}, '', newUrl);
+                })
+                .catch(err => {
+                    console.error('Search failed:', err);
+                });
+        });
+    </script>
+
+
 
 </body>
 
