@@ -1,173 +1,204 @@
-<!-- live search ra binary search (with sorting) apply gareko cha yo file ma -->
 <?php
+header('Content-Type: application/json');
 require_once '../shared/dbconnect.php';
 
-// Get search key
-$key = strtolower(trim($_GET['q'] ?? ''));
-if ($key === '') {
+// Error handling
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database connection failed', 'products' => []]);
     exit;
 }
 
-// Fetch all products
-$data = [];
-$result = $conn->query("
-    SELECT id, j_name, image, price, discount, quality, description 
-    FROM products
-");
+try {
+    // Get search parameters
+    $key = strtolower(trim($_GET['q'] ?? ''));
+    $sortBy = $_GET['sort'] ?? 'popularity';
+        $category = strtolower(trim($_GET['category'] ?? 'all'));
 
-while ($row = $result->fetch_assoc()) {
-    $data[] = $row;
-}
-
-/* 
-   MERGE SORT (By Name)
+    /* 
+       DATABASE SEARCH
+       If search query exists, filter by name/category/country/quality
+       If no search, load all products
     */
-function mergeSortByName(array $arr): array
-{
-    $count = count($arr);
-    if ($count <= 1) {
-        return $arr;
-    }
-
-    $mid = intdiv($count, 2);
-    $left = array_slice($arr, 0, $mid);
-    $right = array_slice($arr, $mid);
-
-    return mergeByName(
-        mergeSortByName($left),
-        mergeSortByName($right)
-    );
-}
-
-function mergeByName(array $left, array $right): array
-{
-    $result = [];
-    $i = $j = 0;
-    $lCount = count($left);
-    $rCount = count($right);
-
-    while ($i < $lCount && $j < $rCount) {
-        if (strcasecmp($left[$i]['j_name'], $right[$j]['j_name']) <= 0) {
-            $result[] = $left[$i++];
-        } else {
-            $result[] = $right[$j++];
-        }
-    }
-
-    while ($i < $lCount) {
-        $result[] = $left[$i++];
-    }
-
-    while ($j < $rCount) {
-        $result[] = $right[$j++];
-    }
-
-    return $result;
-}
-
-// Sort data before binary search
-$data = mergeSortByName($data);
-
-/* 
-   BINARY SEARCH (Partial)
-    */
-function binarySearch(array $arr, string $key): array
-{
-    $low = 0;
-    $high = count($arr) - 1;
-    $results = [];
-
-    while ($low <= $high) {
-        $mid = intdiv($low + $high, 2);
-        $name = strtolower($arr[$mid]['j_name']);
-
-        if (strpos($name, $key) !== false) {
-            $results[] = $arr[$mid];
-
-            // Check left side
-            for ($i = $mid - 1; $i >= 0; $i--) {
-                if (strpos(strtolower($arr[$i]['j_name']), $key) === false) {
-                    break;
-                }
-                $results[] = $arr[$i];
+    if ($key !== '') {
+        // Search mode - filter by search query
+            $sql = "SELECT p.id, p.j_name, p.image, p.price, p.discount, p.quality, ";
+            $sql .= "p.description, p.category, p.country, p.date_added, ";
+            $sql .= "COALESCE(SUM(oi.quantity), 0) as total_orders ";
+            $sql .= "FROM products p ";
+            $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
+            $sql .= "WHERE (LOWER(p.j_name) LIKE ?  OR LOWER(p.category) LIKE ?  OR LOWER(p.country) LIKE ?  OR LOWER(p.quality) LIKE ?) ";
+            if ($category !== 'all') {
+                $sql .= " AND LOWER(p.category) = ? ";
             }
+            $sql .= "GROUP BY p.id";
 
-            // Check right side
-            $len = count($arr);
-            for ($i = $mid + 1; $i < $len; $i++) {
-                if (strpos(strtolower($arr[$i]['j_name']), $key) === false) {
-                    break;
-                }
-                $results[] = $arr[$i];
+            $stmt = $conn->prepare($sql);
+            $searchPattern = "%{$key}%";
+            if ($category !== 'all') {
+                $stmt->bind_param("sssss", $searchPattern, $searchPattern, $searchPattern, $searchPattern, $category);
+            } else {
+                $stmt->bind_param("ssss", $searchPattern, $searchPattern, $searchPattern, $searchPattern);
             }
-            break;
-        }
-
-        if ($key < $name) {
-            $high = $mid - 1;
-        } else {
-            $low = $mid + 1;
-        }
+    } else {
+        // Default mode - load all products
+            $sql = "SELECT p.id, p.j_name, p.image, p.price, p.discount, p.quality, ";
+            $sql .= "p.description, p.category, p.country, p.date_added, ";
+            $sql .= "COALESCE(SUM(oi.quantity), 0) as total_orders ";
+            $sql .= "FROM products p ";
+            $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
+            if ($category !== 'all') {
+                $sql .= "WHERE LOWER(p.category) = ? ";
+            }
+            $sql .= "GROUP BY p.id";
+        
+            $stmt = $conn->prepare($sql);
+            if ($category !== 'all') {
+                $stmt->bind_param("s", $category);
+            }
     }
 
-    // Sort matched results alphabetically
-    usort($results, function ($a, $b) {
-        return strcasecmp($a['j_name'], $b['j_name']);
-    });
+    if (!$stmt->execute()) {
+        throw new Exception("Query execution failed: " . $stmt->error);
+    }
 
-    return $results;
-}
+    $result = $stmt->get_result();
 
-// Perform search
-$found = binarySearch($data, $key);
+    $products = [];
+    while ($row = $result->fetch_assoc()) {
+        $products[] = $row;
+    }
+    $stmt->close();
 
-if (empty($found)) {
-    echo "<p class='text-center text-muted'>No jersey found</p>";
-    exit;
+/* 
+   ALGORITHM 1: CONTENT-BASED RECOMMENDATION
+   Matches products based on similarity to search query
+   Scoring: Name match(10), Category(5), Country(5), Quality(3)
+*/
+function contentBasedScore(array $product, string $searchKey): int
+{
+    $score = 0;
+    $key = strtolower($searchKey);
+    
+    // Name match - highest priority
+    if (stripos($product['j_name'], $key) !== false) {
+        $score += 10;
+        // Bonus for exact word match
+        if (strpos(strtolower($product['j_name']), $key) === 0) {
+            $score += 5;
+        }
+    }
+    
+    // Category match
+    if (stripos($product['category'], $key) !== false) {
+        $score += 5;
+    }
+    
+    // Country match
+    if (stripos($product['country'], $key) !== false) {
+        $score += 5;
+    }
+    
+    // Quality match
+    if (stripos($product['quality'], $key) !== false) {
+        $score += 3;
+    }
+    
+    return $score;
 }
 
 /* 
-   DISPLAY RESULTS
-    */
-foreach ($found as $r) {
-    $img = !empty($r['image'])
-        ? '../shared/products/' . htmlspecialchars($r['image'])
-        : 'images/placeholder.png';
+   ALGORITHM 2: COLLABORATIVE FILTERING
+   Recommends products based on popularity (total orders)
+   Used to identify bestsellers and trending items
+*/
+function applyCollaborativeFiltering(&$products)
+{
+    // Find max orders to calculate relative popularity
+    $maxOrders = 0;
+    foreach ($products as $p) {
+        if ($p['total_orders'] > $maxOrders) {
+            $maxOrders = $p['total_orders'];
+        }
+    }
+    
+    foreach ($products as &$item) {
+        $orders = (int)$item['total_orders'];
+        
+        // Bestseller: top 20% of orders
+        $item['is_bestseller'] = $maxOrders > 0 && $orders >= ($maxOrders * 0.6);
+        
+        // Trending: recent orders with good frequency
+        $item['is_trending'] = $orders >= 5 && $orders < ($maxOrders * 0.6);
+        
+        // Popularity score for ranking
+        $item['popularity_score'] = $orders;
+    }
+    unset($item);
+}
 
-    $price = (int) $r['price'];
-    $discount = (int) $r['discount'];
-    $title = htmlspecialchars($r['j_name']);
-    $quality = htmlspecialchars($r['quality'] ?? '');
-    $desc = htmlspecialchars($r['description'] ?? '');
+// Apply algorithms
+applyCollaborativeFiltering($products);
 
-    $finalPrice = $discount > 0
-        ? $price - ($price * $discount / 100)
-        : $price;
+foreach ($products as &$item) {
+    $item['relevance_score'] = $key !== '' ? contentBasedScore($item, $key) : 0;
+    $item['final_price'] = $item['discount'] > 0 
+        ? $item['price'] - ($item['price'] * $item['discount'] / 100)
+        : $item['price'];
+}
+unset($item);
 
-    echo "
-    <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-        <a href='view_jersey.php?id={$r['id']}' class='text-decoration-none text-dark'>
-            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-                " . ($discount > 0
-        ? "<span class='badge bg-danger discount-badge position-absolute'>{$discount}% OFF</span>"
-        : "") . "
-                <img src='{$img}' class='card-img-top mx-auto mt-3'
-                     alt='{$title}' style='height:310px;width:auto;object-fit:contain;'>
-                <div class='card-body p-2 d-flex flex-column'>
-                    <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                    <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
-                    <p class='card-text text-muted small mb-2'>{$desc}</p>
-                    <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                        <li>
-                            " . ($discount > 0
-        ? "<span style='text-decoration:line-through;color:#888;'>Rs " . number_format($price) . "</span>
-                                   <b class='ms-2 text-success'>Rs " . number_format($finalPrice) . "</b>"
-        : "<b>Rs " . number_format($price) . "</b>") . "
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </a>
-    </div>";
+/* 
+   SORTING (Professional E-commerce Standards)
+*/
+switch ($sortBy) {
+    case 'popularity':
+        // Most ordered first (collaborative filtering)
+        usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
+        break;
+        
+    case 'price_low':
+        usort($products, fn($a, $b) => $a['final_price'] <=> $b['final_price']);
+        break;
+        
+    case 'price_high':
+        usort($products, fn($a, $b) => $b['final_price'] <=> $a['final_price']);
+        break;
+        
+    case 'newest':
+        usort($products, fn($a, $b) => strtotime($b['date_added']) <=> strtotime($a['date_added']));
+        break;
+        
+    case 'relevance':
+    default:
+        // Only use relevance scoring if search query exists
+        if ($key !== '') {
+            // Content-based + Collaborative (relevance + popularity)
+            usort($products, function($a, $b) {
+                $scoreA = ($a['relevance_score'] * 2) + ($a['popularity_score'] * 0.5);
+                $scoreB = ($b['relevance_score'] * 2) + ($b['popularity_score'] * 0.5);
+                return $scoreB <=> $scoreA;
+            });
+        } else {
+            // No search - default to popularity
+            usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
+        }
+        break;
+    }
+
+    // Return JSON response
+    echo json_encode([
+        'products' => $products,
+        'total' => count($products),
+        'success' => true
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'products' => [],
+        'success' => false
+    ]);
 }
 ?>

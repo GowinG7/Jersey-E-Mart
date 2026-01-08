@@ -14,402 +14,222 @@ include_once '../shared/commonlinks.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Page</title>
 
-    <style>
-        body {
-            background-color: #e0f4f2;
-            color: #2d5d58;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        h1{
-            color: rgb(155, 125, 170, 1);
-        }
-
-        h1 span {
-            border-bottom: 3px solid #47a589;
-            padding-bottom: 5px;
-        }
-
-        .card {
-            border-radius: 14px;
-            background: linear-gradient(145deg, #ffffff, #cdeeea);
-            border: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 24px rgba(48, 107, 101, 0.25);
-        }
-
-        .card img {
-            border-radius: 10px;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 10px;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .card:hover img {
-            transform: scale(1.03);
-        }
-
-        .card-title {
-            color: #1c6059;
-            font-weight: 700;
-        }
-
-        .card-text {
-            color: #4f6765;
-        }
-
-        .btn-primary {
-            background-color: #379069;
-            border: none;
-            transition: background-color 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: #2c6b60;
-        }
-
-        a {
-            color: #1c6059;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        a:hover {
-            color: #47a589;
-        }
-
-        .section-title {
-            margin-top: 60px;
-            margin-bottom: 30px;
-            font-weight: 700;
-            color: rgba(28, 96, 89, 0.55);
-        }
-
-        hr {
-            border: 1px solid #cdeeea;
-            margin: 40px 0;
-        }
-
-        .card ul li {
-            font-size: 0.9rem;
-        }
-
-        /* Carousel Wrapper */
-        .carousel {
-            border-radius: 14px;
-            padding: 0;
-            overflow: hidden;
-            background-color: #dff3f0;
-        }
-
-        /* Single Slide */
-        .carousel-item {
-            height: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #dff3f0;
-            transition: opacity 0.6s ease-in-out;
-        }
-
-        /* Fade Effect */
-        .carousel-fade .carousel-item {
-            opacity: 0;
-        }
-
-        .carousel-fade .carousel-item.active {
-            opacity: 1;
-        }
-
-        /* Carousel Image */
-        .carousel-item img {
-            height: 100%;
-            width: auto;
-            object-fit: contain;
-            border-radius: 12px;
-            transition: transform 0.4s ease;
-        }
-
-        .carousel-item img:hover {
-            transform: scale(1.03);
-        }
-
-        /* Prev/Next Controls */
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            filter: invert(80%);
-        }
-
-
-        .discount-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 15px;
-            z-index: 5;
-            /* stays above hover shadow */
-            box-shadow: none !important;
-            /* never gets shadow */
-            filter: brightness(1.15);
-            /* keeps pop effect even on hover */
-        }
-
-        .card:hover .discount-badge {
-            box-shadow: none !important;
-            /* ensures hover won't affect it */
-        }
-
-
-
-        /* For Mobile Screens */
-        @media (max-width: 768px) {
-            .carousel-item {
-                min-height: 180px;
-                /* smaller carousel on mobile */
-            }
-
-            .carousel-item img {
-                height: auto;
-                width: 90%;
-                /* small padding on sides */
-            }
-        }
-    </style>
+   <link rel="stylesheet" href="css/index.css">
 </head>
 
 <body>
+    <?php
+    // Build carousel slides: Most Popular products (top 2) + Top Discount products (top 2) + Bestseller
+    $carouselSlides = [];
+    $seenIds = [];
 
-    <!-- Carousel -->
-    <div class="container py-4">
-        <div id="carouselExampleAutoplaying" class="carousel slide carousel-fade shadow-sm" data-bs-ride="carousel"
-            data-bs-interval="2700" style="border-radius: 14px; overflow:hidden;">
+    // 1. Get top 5 Most Popular products
+    $popularCarouselSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.category, p.price, p.discount, 
+                                   COALESCE(SUM(oi.quantity), 0) AS total_orders
+                            FROM products p
+                            LEFT JOIN order_items oi ON p.id = oi.product_id
+                            GROUP BY p.id
+                            ORDER BY total_orders DESC, p.date_added DESC
+                            LIMIT 5";
 
-            <div class="carousel-inner" style="border-radius: 14px;">
+    if ($popRes = $conn->query($popularCarouselSql)) {
+        while ($row = $popRes->fetch_assoc()) {
+            $carouselSlides[] = $row + ['highlight' => 'Most Popular'];
+            $seenIds[$row['id']] = true;
+        }
+    }
 
-                <?php
-                $carousel = mysqli_query($conn, "SELECT image FROM carousel ORDER BY id DESC");
+    // 2. Get top 2 Discount products that aren't already shown
+    $discountCarouselSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.category, p.price, p.discount,
+                                   COALESCE(SUM(oi.quantity), 0) AS total_orders
+                            FROM products p
+                            LEFT JOIN order_items oi ON p.id = oi.product_id
+                            WHERE p.discount > 0";
+    
+    if (!empty($seenIds)) {
+        $idList = implode(',', array_keys($seenIds));
+        $discountCarouselSql .= " AND p.id NOT IN ($idList)";
+    }
+    
+    $discountCarouselSql .= " GROUP BY p.id ORDER BY p.discount DESC, p.date_added DESC LIMIT 5";
 
-                $isFirst = true;
-                while ($row = mysqli_fetch_assoc($carousel)) {
-                    $active = $isFirst ? "active" : "";
-                    $isFirst = false;
+    if ($discRes = $conn->query($discountCarouselSql)) {
+        while ($row = $discRes->fetch_assoc()) {
+            $carouselSlides[] = $row + ['highlight' => 'Top Discount'];
+            $seenIds[$row['id']] = true;
+        }
+    }
+
+    // 3. Add one Bestseller (most orders >= 10) if available and not already shown
+    $bestsellerSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.category, p.price, p.discount,
+                             COALESCE(SUM(oi.quantity), 0) AS total_orders
+                      FROM products p
+                      LEFT JOIN order_items oi ON p.id = oi.product_id
+                      GROUP BY p.id
+                      HAVING total_orders >= 10";
+    
+    if (!empty($seenIds)) {
+        $idList = implode(',', array_keys($seenIds));
+        $bestsellerSql .= " AND p.id NOT IN ($idList)";
+    }
+    
+    $bestsellerSql .= " ORDER BY total_orders DESC LIMIT 1";
+
+    if ($bestRes = $conn->query($bestsellerSql)) {
+        if ($bestRow = $bestRes->fetch_assoc()) {
+            $carouselSlides[] = $bestRow + ['highlight' => 'Bestseller'];
+        }
+    }
+    ?>
+
+    <div class="container my-4">
+        <?php if (!empty($carouselSlides)) : ?>
+            <div id="heroCarousel" class="carousel slide carousel-fade carousel-hero" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    <?php foreach ($carouselSlides as $idx => $_) : ?>
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<?= $idx ?>" class="<?= $idx === 0 ? 'active' : '' ?>" aria-label="Slide <?= $idx + 1 ?>"></button>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="carousel-inner">
+                    <?php foreach ($carouselSlides as $idx => $slide) :
+                        $sid = (int) $slide['id'];
+                        $title = htmlspecialchars($slide['title']);
+                        $desc = htmlspecialchars($slide['description'] ?? '');
+                        $img = !empty($slide['image']) ? '../shared/products/' . htmlspecialchars($slide['image']) : 'images/placeholder.png';
+                        $discount = (int) ($slide['discount'] ?? 0);
+                        $price = (int) ($slide['price'] ?? 0);
+                        $finalPrice = $discount > 0 ? $price - ($price * $discount / 100) : $price;
+                        $badge = htmlspecialchars($slide['highlight']);
                     ?>
-                    <div class="carousel-item <?php echo $active; ?>" style="height: 550px; background:#dff3f0;">
-                        <img src="../shared/carousel/<?php echo $row['image']; ?>" class="d-block mx-auto"
-                            alt="carousel image"
-                            style="height: 100%; width: auto; object-fit: contain; border-radius:12px;">
-                    </div>
-                <?php } ?>
+                        <div class="carousel-item carousel-item-hero <?= $idx === 0 ? 'active' : '' ?>">
+                            <div class="carousel-gradient"></div>
+                            <div class="container">
+                                <div class="row align-items-center">
+                                    <div class="col-lg-6 col-md-7 order-2 order-md-1">
+                                        <div class="carousel-caption-custom">
+                                            <div class="d-flex gap-2 mb-3">
+                                                <span class="carousel-badge d-inline-flex align-items-center gap-2">
+                                                    <i class="bi bi-lightning-charge-fill text-warning"></i> <?= $badge ?>
+                                                </span>
+                                                <a class="btn btn-success btn-sm" href="view_jersey.php?id=<?= $sid ?>">View Jersey</a>
+                                            </div>
+                                            <div class="title mt-2"><?= $title ?></div>
+                                            <div class="d-flex align-items-center justify-content-between gap-3 mt-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <?php if ($discount > 0) : ?>
+                                                        <span class="fs-6 text-decoration-line-through opacity-75">Rs <?= number_format($price) ?></span>
+                                                        <span class="fs-5 fw-bold text-warning">Rs <?= number_format($finalPrice) ?></span>
+                                                    <?php else : ?>
+                                                        <span class="fs-5 fw-bold text-warning">Rs <?= number_format($price) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 col-md-5 text-center order-1 order-md-2">
+                                        <div class="carousel-img-box">
+                                            <a href="view_jersey.php?id=<?= $sid ?>" class="d-inline-block w-100 h-100">
+                                                <img src="<?= $img ?>" alt="<?= $title ?>" class="img-fluid">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
 
             </div>
-
-            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying"
-                data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" style="filter:invert(80%);"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-
-            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying"
-                data-bs-slide="next">
-                <span class="carousel-control-next-icon" style="filter:invert(80%);"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
-
-        </div>
+        <?php else : ?>
+            <div class="alert alert-info mb-4">Add products to see the carousel highlights.</div>
+        <?php endif; ?>
     </div>
-
-
-
-
     <!-- Explore Our Page -->
-    <h1 class="text-center mt-5 mb-4 display-5 fw-bold animate__animated">
-        <span>Explore Our Page</span>
-    </h1>
+        <h1 class="text-center mt-4  display-5 fw-bold animate__animated">
+                <span>Explore Our Page</span>
+        </h1>
 
-    <div class="container my-5">
+                <div class="container my-2">
+        <?php
+        // Category-specific popular sections
+        $categorySections = [
+            'football' => ['title' => 'Football Jerseys', 'empty' => 'No football jerseys available.'],
+            'cricket' => ['title' => 'Cricket Jerseys', 'empty' => 'No cricket jerseys available.'],
+            'npl' => ['title' => 'NPL Jerseys', 'empty' => 'No NPL jerseys available.'],
+        ];
+        ?>
 
-        <!-- Nepal Football Jerseys -->
-        <h3 class="text-center section-title animate__animated">Nepal Football Jerseys</h3>
-        <div class="row justify-content-start">
-            <?php
-            $res = $conn->query("SELECT id, j_name AS title, description, image,quality, price,discount 
-                         FROM products 
-                         WHERE category = 'football' 
-                         ORDER BY id DESC LIMIT 6");
+        <?php foreach ($categorySections as $catKey => $meta) :
+            $likeCat = $conn->real_escape_string($catKey);
+            $catSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.quality, p.price, p.discount, p.category,
+                              COALESCE(SUM(oi.quantity), 0) AS total_orders
+                       FROM products p
+                       LEFT JOIN order_items oi ON p.id = oi.product_id
+                       WHERE LOWER(p.category) LIKE '{$likeCat}%'
+                       GROUP BY p.id
+                       ORDER BY total_orders DESC, p.date_added DESC
+                       LIMIT 6";
+            $catRes = $conn->query($catSql);
+        ?>
+            <hr class="my-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+                <div>
+                    <h3 class="section-title mb-1"><?= htmlspecialchars($meta['title']) ?></h3>
+                </div>
+            </div>
 
-            if ($res && $res->num_rows) {
-                while ($r = $res->fetch_assoc()) {
-
-                    $id = $r['id'];
-                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
-                    $title = htmlspecialchars($r['title']);
-                    $quality = htmlspecialchars($r['quality'] ?? '');
-                    $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = intval($r['price']);
-                    $discount = intval($r['discount']);
-
-                    echo "
+            <div class="row justify-content-start">
+                <?php
+                if ($catRes && $catRes->num_rows) {
+                    while ($r = $catRes->fetch_assoc()) {
+                        $id = $r['id'];
+                        $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
+                        $title = htmlspecialchars($r['title']);
+                        $quality = htmlspecialchars($r['quality'] ?? '');
+                        $desc = htmlspecialchars($r['description'] ?? '');
+                        $price = (int) $r['price'];
+                        $discount = (int) $r['discount'];
+                        $orders = (int) $r['total_orders'];
+                        $finalPrice = $discount > 0 ? $price - ($price * $discount / 100) : $price;
+                        ?>
                         <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                        <div class='card text-center shadow-sm border-0 h-100 position-relative'>
+                            <a href='view_jersey.php?id=<?= $id ?>' class='text-decoration-none text-dark'>
+                                <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>" : "") . "
+                                    <?= $discount > 0 ? "<span class='badge bg-danger position-absolute' style='top:10px;right:10px;'>$discount% OFF</span>" : "" ?>
+                                    <?= $orders >= 10 ? "<span class='badge bg-warning text-dark position-absolute' style='top:10px;left:10px;'>Bestseller</span>" : "" ?>
 
-                            <img src='{$img}' class='card-img-top mx-auto mt-3' 
-                                alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
+                                    <img src='<?= $img ?>' class='card-img-top mx-auto mt-3' alt='<?= $title ?>' style='height:300px; width:auto; object-fit:contain;'>
 
-                            <div class='card-body p-2 d-flex flex-column'>
-                            <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                            <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
-                            <p class='card-text text-muted small mb-2'>{$desc}</p>
+                                    <div class='card-body p-2 d-flex flex-column'>
+                                        <h6 class='card-title fw-semibold mb-1'><?= $title ?></h6>
+                                        <p class='card-text fw-semibold text-muted small mb-1'><?= $quality ?></p>
+                                        <p class='card-text text-muted small mb-2' style='min-height:36px;'><?= $desc ?></p>
 
-                            <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                                <li>
-                                    " . ($discount > 0
-                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                        : "<b>Rs " . number_format($price) . "</b>"
-                    ) . "
-                                </li>
-                            </ul>
+                                        <div class='d-flex justify-content-center align-items-center gap-2 mb-2'>
+                                            <?php if ($discount > 0) : ?>
+                                                <span style='text-decoration:line-through; color:#888;'>Rs <?= number_format($price) ?></span>
+                                                <b class='text-success'>Rs <?= number_format($finalPrice) ?></b>
+                                            <?php else : ?>
+                                                <b>Rs <?= number_format($price) ?></b>
+                                            <?php endif; ?>
+                                        </div>
 
-                            </div>
+                                        <?= $orders > 0 ? "<small class='text-muted'><i class='bi bi-bag-check'></i> {$orders} orders</small>" : "<small class='text-muted'>New arrival</small>" ?>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
-                        </a>
-                        </div>";
+                        <?php
+                    }
+                } else {
+                    echo "<p class='text-muted'>{$meta['empty']}</p>";
                 }
-            } else {
-                echo '<p class="text-muted">No football jerseys available.</p>';
-            }
-            ?>
+                ?>
+            </div>
+        <?php endforeach; ?>
         </div>
-
-
-        <hr>
-
-        <!-- Nepal Cricket Jerseys -->
-        <h3 class="text-center section-title animate__animated">Nepal Cricket Jerseys</h3>
-        <div class="row justify-content-start">
-            <?php
-            $res = $conn->query("SELECT id, j_name AS title,quality, description, image, price, discount 
-                         FROM products 
-                         WHERE category = 'Cricket' 
-                         ORDER BY id DESC LIMIT 6");
-
-            if ($res && $res->num_rows) {
-                while ($r = $res->fetch_assoc()) {
-
-                    $id = $r['id'];
-                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
-                    $title = htmlspecialchars($r['title']);
-                    $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = intval($r['price']);
-                    $discount = intval($r['discount']);
-
-                    echo "
-                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                            <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-
-                            " . ($discount > 0 ? "<span class='badge bg-danger discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge discount-badge position-absolute' style='top:10px;font-size:15px;right:10px;'>{$discount}% OFF</span>" : "") . "
-
-                            <img src='{$img}' class='card-img-top mx-auto mt-3'
-                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
-                            <div class='card-body p-2 d-flex flex-column'>
-                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
-                                <p class='card-text text-muted small mb-2'>{$desc}</p>
-
-                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                                <li>
-                                    " . ($discount > 0
-                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                            <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                        : "<b>Rs " . number_format($price) . "</b>"
-                    ) . "
-                                </li>
-                                </ul>
-
-                            </div>
-                            </div>
-                        </a>
-                        </div>";
-                }
-            } else {
-                echo '<p class="text-muted">No Cricket jerseys available.</p>';
-            }
-            ?>
-        </div>
-
-
-        <hr>
-
-        <!-- NPL Jerseys -->
-        <h3 class="text-center section-title animate__animated">Nepal Premier League (NPL)</h3>
-        <div class="row justify-content-start">
-
-            <?php
-            $res = $conn->query("SELECT id, j_name AS title, quality, description, image, price,discount 
-                     FROM products 
-                     WHERE category = 'NPL cricket' 
-                     ORDER BY id DESC LIMIT 6");
-
-            if ($res && $res->num_rows) {
-                while ($r = $res->fetch_assoc()) {
-
-                    $id = $r['id'];
-                    $img = !empty($r['image']) ? '../shared/products/' . htmlspecialchars($r['image']) : 'images/placeholder.png';
-                    $title = htmlspecialchars($r['title']);
-                    $quality = htmlspecialchars($r['quality'] ?? '');
-                    $desc = htmlspecialchars($r['description'] ?? '');
-                    $price = intval($r['price']);
-                    $discount = intval($r['discount']);
-
-                    echo "
-                        <div class='col-sm-12 col-md-6 col-lg-4 mb-4'>
-                        <a href='view_jersey.php?id={$id}' class='text-decoration-none text-dark'>
-                        <div class='card text-center shadow-sm border-0 h-100 position-relative'>
-
-                            <!-- DISCOUNT BADGE (only display if >0) -->
-                            " . ($discount > 0
-                        ? "<span class='badge bg-danger discount-badge position-absolute' style='top:10px;font-size:15px; right:10px;'>{$discount}% OFF</span>"
-                        : ""
-                    ) . "
-
-                            <img src='{$img}' class='card-img-top mx-auto mt-3'
-                                    alt='{$title}' style='height:310px; width:auto; object-fit:contain;'>
-
-                            <div class='card-body p-2 d-flex flex-column'>
-                                <h6 class='card-title fw-semibold mb-1'>{$title}</h6>
-                                <p class='card-text fw-semibold text-muted small mb-2'>{$quality}</p>
-                                <p class='card-text text-muted small mb-2'>{$desc}</p>
-
-                                <ul class='list-unstyled small mb-2 text-start mx-auto' style='max-width:200px;'>
-                                    <li>
-                                        " . ($discount > 0
-                        ? "<span style='text-decoration:line-through; color:#888;'>Rs " . number_format($price) . "</span>
-                                                <b class='ms-2 text-success'>Rs " . number_format($price - ($price * $discount / 100)) . "</b>"
-                        : "<b class='ms-2 text-success'>Rs " . number_format($price) . "</b>"
-                    ) . "
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        </a>
-                        </div>";
-                }
-            } else {
-                echo "<p class='text-muted'>No NPL jerseys available.</p>";
-            }
-            ?>
-        </div>
-
-    </div>
 
     <!-- Reach Us / Head Office -->
     <section class="container my-5">

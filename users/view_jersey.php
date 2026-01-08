@@ -23,6 +23,25 @@ $displayPrice = $basePrice;
 if ($discount > 0) {
     $displayPrice = $basePrice - ($basePrice * $discount / 100);
 }
+
+// Get related jerseys from same category
+$category = $p['category'];
+$relatedSql = "SELECT p.id, p.j_name AS title, p.image, p.price, p.discount,
+                       COALESCE(SUM(oi.quantity), 0) AS total_orders
+                FROM products p
+                LEFT JOIN order_items oi ON p.id = oi.product_id
+                WHERE LOWER(p.category) LIKE LOWER('" . $conn->real_escape_string($category) . "%')
+                AND p.id != $id
+                GROUP BY p.id
+                ORDER BY total_orders DESC, p.date_added DESC
+                LIMIT 6";
+$relatedResult = mysqli_query($conn, $relatedSql);
+$relatedProducts = [];
+if ($relatedResult) {
+    while ($rel = mysqli_fetch_assoc($relatedResult)) {
+        $relatedProducts[] = $rel;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,37 +49,7 @@ if ($discount > 0) {
 <head>
     <meta charset="UTF-8">
     <title><?php echo htmlspecialchars($p['j_name']); ?></title>
-    <style>
-        .size-btn {
-            padding: 8px 18px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: #fff;
-            cursor: pointer;
-            margin: 4px;
-        }
-
-        .size-btn:hover {
-            border-color: #1c6059;
-        }
-
-        .size-btn.active {
-            background: #1c6059;
-            color: #fff;
-            border-color: #1c6059;
-        }
-
-        .qty-box {
-            width: 70px;
-        }
-
-        #sizeAlert {
-            display: none;
-            color: red;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-    </style>
+   <link rel="stylesheeet" href="css/view_jersey.css">
 </head>
 
 <body style="background-color:#e9f8f6; font-family:Segoe UI;">
@@ -310,6 +299,58 @@ if ($discount > 0) {
         });
 
     </script>
+
+    <!-- Related Products Section -->
+    <?php if (!empty($relatedProducts)): ?>
+    <div class="container related-section">
+        <h3 class="related-title">You Might Also Like</h3>
+        <div class="row g-3">
+            <?php foreach ($relatedProducts as $rel): 
+                $relImg = !empty($rel['image']) ? '../shared/products/' . htmlspecialchars($rel['image']) : 'images/placeholder.png';
+                $relTitle = htmlspecialchars($rel['title']);
+                $relPrice = intval($rel['price']);
+                $relDiscount = intval($rel['discount']);
+                $relOrders = intval($rel['total_orders']);
+                $relFinalPrice = $relDiscount > 0 ? $relPrice - ($relPrice * $relDiscount / 100) : $relPrice;
+                $isBestseller = $relOrders >= 10;
+            ?>
+            <div class="col-sm-12 col-md-6 col-lg-4">
+                <a href="view_jersey.php?id=<?= $rel['id'] ?>" class="text-decoration-none text-dark">
+                    <div class="card related-card">
+                        <?php if ($relDiscount > 0): ?>
+                            <span class="badge bg-danger related-badge related-badge-discount"><?= $relDiscount ?>% OFF</span>
+                        <?php endif; ?>
+                        
+                        <?php if ($isBestseller): ?>
+                            <span class="badge bg-warning text-dark related-badge related-badge-bestseller">Bestseller</span>
+                        <?php endif; ?>
+                        
+                        <img src="<?= $relImg ?>" class="card-img-top mx-auto" alt="<?= $relTitle ?>">
+                        
+                        <div class="related-card-body d-flex flex-column">
+                            <h6 class="related-card-title"><?= $relTitle ?></h6>
+                            <div class="related-price">
+                                <?php if ($relDiscount > 0): ?>
+                                    <span class="related-price-strike">Rs <?= number_format($relPrice) ?></span>
+                                    <br>
+                                    <span class="text-success fw-bold">Rs <?= number_format($relFinalPrice) ?></span>
+                                <?php else: ?>
+                                    <span class="text-success fw-bold">Rs <?= number_format($relPrice) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($relOrders > 0): ?>
+                                <small class="text-muted mt-2"><i class="bi bi-bag-check"></i> <?= $relOrders ?> orders</small>
+                            <?php else: ?>
+                                <small class="text-muted mt-2">New arrival</small>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
 </body>
 
