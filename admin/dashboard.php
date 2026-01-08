@@ -4,98 +4,149 @@ require_once("../shared/dbconnect.php");
 require_once("../shared/commonlinks.php");
 
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit;
 }
 
-/* ===== OVERALL SUMMARY ===== */
-$totalOrders = $conn->query("SELECT COUNT(*) t FROM orders")->fetch_assoc()['t'];
-$totalUsers = $conn->query("SELECT COUNT(DISTINCT user_id) t FROM orders")->fetch_assoc()['t'];
+/* Get filter parameters */
+$startDate = $_GET['start_date'] ?? date('Y-m-01');
+$endDate = $_GET['end_date'] ?? date('Y-m-d');
+$category = $_GET['category'] ?? '';
 
-$paidData = $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders WHERE payment_status='Completed'")->fetch_assoc();
+/* Base WHERE clause for all queries */
+$dateWhere = "WHERE order_date >= '$startDate 00:00:00' AND order_date <= '$endDate 23:59:59'";
+// For alias-safe filtering on orders
+$orderDateWhere = "WHERE o.order_date >= '$startDate 00:00:00' AND o.order_date <= '$endDate 23:59:59'";
+$categoryWhere = $category ? "AND p.category = '" . $conn->real_escape_string($category) . "'" : '';
+// Category-aware JOIN parts for order-scoped queries
+$catJoin = $category ? "JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.id" : "";
+$catWhereOrders = $category ? "AND p.category = '" . $conn->real_escape_string($category) . "'" : '';
+
+/*  OVERALL SUMMARY WITH FILTERS  */
+$totalOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders")->fetch_assoc()['t'];
+$totalUsers = $conn->query("SELECT COUNT(DISTINCT o.user_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders")->fetch_assoc()['t'];
+
+$paidData = $category
+    ? $conn->query("SELECT COUNT(DISTINCT o.order_id) c, SUM(oi.subtotal) t FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON oi.product_id=p.id $orderDateWhere AND o.payment_status='Completed' AND p.category='" . $conn->real_escape_string($category) . "'")->fetch_assoc()
+    : $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders $dateWhere AND payment_status='Completed'")->fetch_assoc();
 $paidOrders = $paidData['c'];
 $totalPaidSales = $paidData['t'] ?? 0;
 
-$unpaidData = $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders WHERE payment_status='Pending'")->fetch_assoc();
+$unpaidData = $category
+    ? $conn->query("SELECT COUNT(DISTINCT o.order_id) c, SUM(oi.subtotal) t FROM orders o JOIN order_items oi ON oi.order_id=o.order_id JOIN products p ON oi.product_id=p.id $orderDateWhere AND o.payment_status='Pending' AND p.category='" . $conn->real_escape_string($category) . "'")->fetch_assoc()
+    : $conn->query("SELECT COUNT(*) c, SUM(grand_total) t FROM orders $dateWhere AND payment_status='Pending'")->fetch_assoc();
 $unpaidOrders = $unpaidData['c'];
 $unpaidAmount = $unpaidData['t'] ?? 0;
 
-$codOrders = $conn->query("SELECT COUNT(*) t FROM orders WHERE payment_option='Cash on Delivery'")->fetch_assoc()['t'];
-$onlineOrders = $conn->query("SELECT COUNT(*) t FROM orders WHERE payment_option='Online Payment'")->fetch_assoc()['t'];
+$deliveredOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.order_status='Delivered'")->fetch_assoc()['t'];
+$pendingOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.order_status='Pending'")->fetch_assoc()['t'];
 
-/* ===== ORDER STATUS DATA ===== */
+$codOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.payment_option='Cash on Delivery'")->fetch_assoc()['t'];
+$onlineOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.payment_option='Esewa'")->fetch_assoc()['t'];
+
+$avgOrderValue = $totalOrders > 0 ? ($totalPaidSales + $unpaidAmount) / $totalOrders : 0;
+
+/* Additional KPIs */
+// Total items across filtered orders
+$itemsRes = $conn->query(
+    "SELECT COUNT(*) AS item_count
+     FROM order_items oi
+     JOIN orders o ON oi.order_id = o.order_id
+     " . str_replace('WHERE', 'WHERE', $orderDateWhere) .
+     ($category ? " AND EXISTS (SELECT 1 FROM products p2 WHERE p2.id = oi.product_id AND p2.category='" . $conn->real_escape_string($category) . "')" : "")
+);
+$totalItems = ($itemsRes && ($row = $itemsRes->fetch_assoc())) ? intval($row['item_count']) : 0;
+
+$avgItemsPerOrder = $totalOrders > 0 ? round($totalItems / $totalOrders, 2) : 0;
+$conversionRate = $totalOrders > 0 ? round(($paidOrders / $totalOrders) * 100, 2) : 0;
+
+/* TOP PRODUCTS */
+$topProducts = $conn->query(
+    "SELECT p.j_name, p.image, SUM(oi.quantity) total_qty, SUM(oi.quantity * p.price) total_revenue
+     FROM order_items oi
+     JOIN products p ON oi.product_id = p.id
+     JOIN orders o ON oi.order_id = o.order_id
+     $dateWhere $categoryWhere
+     GROUP BY oi.product_id
+     ORDER BY total_qty DESC
+     LIMIT 5"
+);
+
+/* Get categories for filter */
+$categories = $conn->query("SELECT DISTINCT category FROM products ORDER BY category");
+
+/*  ORDER STATUS DATA  */
 $orderStatusLabels = [];
 $orderStatusData = [];
-$res = $conn->query("SELECT order_status, COUNT(*) t FROM orders GROUP BY order_status");
+$res = $conn->query("SELECT o.order_status, COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders GROUP BY o.order_status");
 while ($r = $res->fetch_assoc()) {
     $orderStatusLabels[] = $r['order_status'];
     $orderStatusData[] = $r['t'];
 }
 
-/* ===== PAYMENT STATUS DATA ===== */
+/*  PAYMENT STATUS DATA  */
 $paymentStatusLabels = ['Completed', 'Pending'];
 $paymentStatusData = [$paidOrders, $unpaidOrders];
 
-/* ===== PAYMENT METHOD DATA ===== */
-$paymentMethodLabels = ['Cash on Delivery', 'Online Payment'];
+/*  PAYMENT METHOD DATA  */
+$paymentMethodLabels = ['Cash on Delivery', 'Esewa'];
 $paymentMethodData = [$codOrders, $onlineOrders];
 
-/* ===== MONTH-WISE SUMMARY ===== */
-$monthLabels = [];
-$monthPaidOrders = [];
-$monthUnpaidOrders = [];
-$monthDeliveredOrders = [];
-$monthPendingOrders = [];
-$monthTotalAmount = [];
+/*  CATEGORY-WISE SUMMARY  */
+$categoryLabels = [];
+$categoryRevenue = [];
+$categoryOrders = [];
+$categoryQuantity = [];
 
-$res = $conn->query(
-    "SELECT DATE_FORMAT(order_date,'%Y-%m') month,
-            SUM(CASE WHEN payment_status='Completed' THEN 1 ELSE 0 END) paid_count,
-            SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) unpaid_count,
-            SUM(CASE WHEN order_status='Delivered' THEN 1 ELSE 0 END) delivered_count,
-            SUM(CASE WHEN order_status='Pending' THEN 1 ELSE 0 END) pending_count,
-            SUM(grand_total) total_amount
-     FROM orders
-     GROUP BY month
-     ORDER BY month ASC"
-);
+// Predefined categories
+$predefCats = ['Football', 'Cricket', 'NPL cricket', 'NSL football'];
+$categoryDisplayMap = [
+    'Football' => 'National team Football',
+    'Cricket' => 'National team Cricket',
+    'NPL cricket' => 'NPL',
+    'NSL football' => 'NSL'
+];
 
-while ($r = $res->fetch_assoc()) {
-    $monthLabels[] = $r['month'];
-    $monthPaidOrders[] = intval($r['paid_count']);
-    $monthUnpaidOrders[] = intval($r['unpaid_count']);
-    $monthDeliveredOrders[] = intval($r['delivered_count']);
-    $monthPendingOrders[] = intval($r['pending_count']);
-    $monthTotalAmount[] = floatval($r['total_amount']);
+// Build data array with category names as keys
+$categoryData = [];
+foreach ($predefCats as $c) {
+    $categoryData[$c] = [
+        'revenue' => 0,
+        'orders' => 0,
+        'quantity' => 0
+    ];
 }
 
-/* ===== YEAR-WISE SUMMARY ===== */
-$yearLabels = [];
-$yearPaidOrders = [];
-$yearUnpaidOrders = [];
-$yearDeliveredOrders = [];
-$yearPendingOrders = [];
-$yearTotalAmount = [];
-
-$res = $conn->query(
-    "SELECT YEAR(order_date) year,
-            SUM(CASE WHEN payment_status='Completed' THEN 1 ELSE 0 END) paid_count,
-            SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) unpaid_count,
-            SUM(CASE WHEN order_status='Delivered' THEN 1 ELSE 0 END) delivered_count,
-            SUM(CASE WHEN order_status='Pending' THEN 1 ELSE 0 END) pending_count,
-            SUM(grand_total) total_amount
-     FROM orders
-     GROUP BY year
-     ORDER BY year ASC"
+// Query database for actual data
+$catRes = $conn->query(
+    "SELECT p.category,
+            COUNT(DISTINCT o.order_id) order_count,
+            SUM(oi.quantity) total_qty,
+            SUM(oi.subtotal) total_revenue
+     FROM order_items oi
+     JOIN products p ON oi.product_id = p.id
+     JOIN orders o ON oi.order_id = o.order_id
+     $dateWhere" . ($category ? " AND p.category='" . $conn->real_escape_string($category) . "'" : "") . "
+     GROUP BY p.category"
 );
 
-while ($r = $res->fetch_assoc()) {
-    $yearLabels[] = $r['year'];
-    $yearPaidOrders[] = intval($r['paid_count']);
-    $yearUnpaidOrders[] = intval($r['unpaid_count']);
-    $yearDeliveredOrders[] = intval($r['delivered_count']);
-    $yearPendingOrders[] = intval($r['pending_count']);
-    $yearTotalAmount[] = floatval($r['total_amount']);
+while ($r = $catRes->fetch_assoc()) {
+    if (isset($categoryData[$r['category']])) {
+        $categoryData[$r['category']] = [
+            'revenue' => floatval($r['total_revenue']),
+            'orders' => intval($r['order_count']),
+            'quantity' => intval($r['total_qty'])
+        ];
+    }
+}
+
+// Build label and data arrays with all 4 categories in order
+foreach ($predefCats as $cat) {
+    $displayName = $categoryDisplayMap[$cat];
+    $categoryLabels[] = $displayName;
+    $categoryRevenue[] = $categoryData[$cat]['revenue'];
+    $categoryOrders[] = $categoryData[$cat]['orders'];
+    $categoryQuantity[] = $categoryData[$cat]['quantity'];
 }
 ?>
 
@@ -116,11 +167,14 @@ while ($r = $res->fetch_assoc()) {
         }
 
         .stat-card {
-            padding: 18px;
+            padding: 12px;
             border-radius: 10px;
             color: #fff;
             box-shadow: 0 4px 10px rgba(0, 0, 0, .15);
+            min-width: 190px;
         }
+        .stat-card p { margin: 0 0 4px; font-size: 12px; opacity: 0.9; }
+        .stat-card h4 { margin: 0; font-size: 20px; }
 
         .bg1 {
             background: #00695c;
@@ -142,6 +196,10 @@ while ($r = $res->fetch_assoc()) {
             background: #2e7d32;
         }
 
+        .bg6 {
+            background: #6a1b9a;
+        }
+
         .card {
             border-radius: 10px;
             box-shadow: 0 3px 8px rgba(0, 0, 0, .12);
@@ -152,30 +210,55 @@ while ($r = $res->fetch_assoc()) {
             margin: auto;
         }
 
-        options: {
-            plugins: {
-                legend: {
-                    position: 'top'
-                }
-            }
+        .filter-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+        }
 
-            ,
-            scales: {
-                x: {
+        .filter-section input,
+        .filter-section select {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
 
-                    stacked: true,
-                    ticks: {
-                        maxRotation: 45, minRotation: 30
-                    }
+        .filter-actions {
+            gap: 8px;
+        }
 
-                    // rotate labels to save space
-                }
+        /* Compact KPI row: horizontal scroll, no wrap */
+        .kpi-row {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .kpi-row > [class^="col-"], .kpi-row > [class*=" col-"] { flex: 0 0 auto; width: auto; }
 
-                ,
-                y: {
-                    beginAtZero: true, stacked: true
-                }
-            }
+        .top-products {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .product-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -186,42 +269,121 @@ while ($r = $res->fetch_assoc()) {
 
     <div class="admin-content">
 
-        <h3 class="mb-4">Dashboard Overview</h3>
+        <h3 class="mb-4">📊 Dashboard Overview</h3>
+
+        <!-- FILTER SECTION -->
+        <div class="filter-section">
+            <h6 class="mb-3">Filter Analytics</h6>
+            <form method="get" class="d-flex flex-wrap filter-actions align-items-center">
+                <input type="date" name="start_date" value="<?= htmlspecialchars($startDate) ?>" required>
+                <input type="date" name="end_date" value="<?= htmlspecialchars($endDate) ?>" required>
+                <select name="category">
+                    <option value="">All Categories</option>
+                    <?php
+                        $predefCategories = ['Football', 'Cricket', 'NPL cricket', 'NSL football'];
+                        // Render predefined categories first
+                        foreach ($predefCategories as $c) {
+                            $sel = ($category === $c) ? 'selected' : '';
+                            echo '<option value="' . htmlspecialchars($c) . '" ' . $sel . '>' . htmlspecialchars($c) . '</option>';
+                        }
+                        // Build a lowercase map to avoid duplicates from DB
+                        $seen = array_change_key_case(array_flip($predefCategories), CASE_LOWER);
+                        while ($cat = $categories->fetch_assoc()) {
+                            $c = $cat['category'];
+                            if (isset($seen[strtolower($c)])) continue; // skip duplicates
+                            $sel = ($category === $c) ? 'selected' : '';
+                            echo '<option value="' . htmlspecialchars($c) . '" ' . $sel . '>' . htmlspecialchars($c) . '</option>';
+                        }
+                    ?>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Apply Filter</button>
+                <a href="dashboard.php" class="btn btn-secondary btn-sm">Reset</a>
+                <div class="vr mx-2 d-none d-md-block"></div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Quick ranges">
+                    <button type="button" class="btn btn-outline-secondary" onclick="setRange('today')">Today</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setRange('7')">Last 7d</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setRange('30')">Last 30d</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setRange('month')">This Month</button>
+                </div>
+                <a href="orders_export.php?start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?><?= $category ? '&category=' . urlencode($category) : '' ?>" class="btn btn-dark btn-sm ms-auto">
+                    Export CSV
+                </a>
+            </form>
+            <small class="text-muted d-block mt-2">Showing data from <strong><?= htmlspecialchars($startDate) ?></strong> to <strong><?= htmlspecialchars($endDate) ?></strong><?= $category ? ' • Category: <strong>' . htmlspecialchars($category) . '</strong>' : '' ?></small>
+        </div>
 
         <!-- KPI CARDS -->
-        <div class="row mb-4">
+        <div class="row mb-3 kpi-row">
             <div class="col-md-3 mb-3">
                 <div class="stat-card bg1">
-                    <p>Total Orders</p>
-                    <h4>
-                        <?= $totalOrders ?>
-                    </h4>
+                    <p>📦 Total Orders</p>
+                    <h4><?= $totalOrders ?></h4>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stat-card bg2">
-                    <p>Total Customers</p>
-                    <h4>
-                        <?= $totalUsers ?>
-                    </h4>
+                    <p>👥 Total Customers</p>
+                    <h4><?= $totalUsers ?></h4>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stat-card bg5">
-                    <p>Paid Sales</p>
-                    <h4>
-                        <?= $paidOrders ?> Orders<br>₹
-                        <?= number_format($totalPaidSales) ?>
-                    </h4>
+                    <p>✅ Delivered Orders</p>
+                    <h4><?= $deliveredOrders ?></h4>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg3">
+                    <p>⏳ Pending Orders</p>
+                    <h4><?= $pendingOrders ?></h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVENUE CARDS -->
+        <div class="row mb-3 kpi-row">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg5">
+                    <p>💰 Total Paid Sales</p>
+                    <h4>Rs. <?= number_format($totalPaidSales) ?></h4>
+                    <small><?= $paidOrders ?> Orders</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stat-card bg4">
-                    <p>Unpaid Orders</p>
-                    <h4>
-                        <?= $unpaidOrders ?> Orders<br>₹
-                        <?= number_format($unpaidAmount) ?>
-                    </h4>
+                    <p>⚠️ Unpaid Amount</p>
+                    <h4>Rs. <?= number_format($unpaidAmount) ?></h4>
+                    <small><?= $unpaidOrders ?> Orders</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg6">
+                    <p>📈 Avg Order Value</p>
+                    <h4>Rs. <?= number_format($avgOrderValue) ?></h4>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg2">
+                    <p>🛒 Total Revenue</p>
+                    <h4>Rs. <?= number_format($totalPaidSales + $unpaidAmount) ?></h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXTRA KPIs -->
+        <div class="row mb-3 kpi-row">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg1">
+                    <p>🎯 Conversion Rate</p>
+                    <h4><?= $conversionRate ?>%</h4>
+                    <small>Paid / Total Orders</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card bg3">
+                    <p>📦 Avg Items / Order</p>
+                    <h4><?= $avgItemsPerOrder ?></h4>
+                    <small>Total items: <?= number_format($totalItems) ?></small>
                 </div>
             </div>
         </div>
@@ -230,98 +392,219 @@ while ($r = $res->fetch_assoc()) {
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card">
-                    <div class="card-header bg-dark text-white">Order Status</div>
+                    <div class="card-header bg-dark text-white">📊 Order Status Distribution</div>
                     <div class="card-body"><canvas id="orderStatusChart"></canvas></div>
                 </div>
             </div>
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <div class="card-header bg-dark text-white">Payment Status</div>
+                    <div class="card-header bg-dark text-white">💳 Payment Status</div>
                     <div class="card-body small-chart"><canvas id="paymentStatusChart"></canvas></div>
                 </div>
             </div>
             <div class="col-md-3 mb-4">
                 <div class="card">
-                    <div class="card-header bg-dark text-white">Payment Method</div>
+                    <div class="card-header bg-dark text-white">💵 Payment Method</div>
                     <div class="card-body"><canvas id="paymentMethodChart"></canvas></div>
                 </div>
             </div>
         </div>
 
-        <!-- Month-wise Orders -->
+        <!-- Product Categories -->
         <div class="col-md-12 mb-4">
             <div class="card">
-                <div class="card-header bg-dark text-white">Month-wise Orders</div>
+                <div class="card-header bg-dark text-white">📂 Product Categories</div>
                 <div class="card-body" style="overflow-x:auto;">
-                    <canvas id="monthOrdersChart" style="min-width:800px; height:200px;"></canvas>
+                    <canvas id="categoriesChart" style="min-width:800px; height:300px;"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Year-wise Orders -->
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">Year-wise Orders</div>
-                <div class="card-body" style="overflow-x:auto;">
-                    <canvas id="yearOrdersChart" style="min-width:500px; height:200px;"></canvas>
+        <!-- TOP PRODUCTS -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">🏆 Top 5 Products</div>
+                    <div class="card-body top-products">
+                        <?php if ($topProducts && $topProducts->num_rows > 0): ?>
+                            <?php while ($product = $topProducts->fetch_assoc()): ?>
+                                <div class="product-item">
+                                    <div style="display: flex; align-items: center; flex: 1;">
+                                        <img src="<?= '../shared/products/' . htmlspecialchars($product['image']) ?>" class="product-img" alt="">
+                                        <div>
+                                            <strong><?= htmlspecialchars($product['j_name']) ?></strong>
+                                            <br>
+                                            <small class="text-muted">Qty: <?= $product['total_qty'] ?> | Revenue: Rs. <?= number_format($product['total_revenue']) ?></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <p class="text-muted text-center">No products sold in this period</p>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
-
 
     </div>
 
     <script>
+        function setRange(preset) {
+            const sd = document.querySelector('input[name="start_date"]');
+            const ed = document.querySelector('input[name="end_date"]');
+            const today = new Date();
+
+            function format(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+
+            let start = new Date(today);
+            let end = new Date(today);
+
+            if (preset === 'today') {
+                // start and end already today
+            } else if (preset === '7') {
+                start.setDate(today.getDate() - 6);
+            } else if (preset === '30') {
+                start.setDate(today.getDate() - 29);
+            } else if (preset === 'month') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+
+            sd.value = format(start);
+            ed.value = format(end);
+            sd.form.submit();
+        }
         /* ORDER STATUS BAR */
-        new Chart(orderStatusChart, {
+        new Chart(document.getElementById('orderStatusChart'), {
             type: 'bar',
-            data: { labels: <?= json_encode($orderStatusLabels) ?>, datasets: [{ data: <?= json_encode($orderStatusData) ?>, backgroundColor: ['#fbc02d', '#4caf50'] }] },
+            data: { labels: <?= json_encode($orderStatusLabels) ?>, datasets: [{ data: <?= json_encode($orderStatusData) ?>, backgroundColor: ['#ff9800', '#4caf50'] }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 
         /* PAYMENT STATUS PIE */
-        new Chart(paymentStatusChart, {
-            type: 'pie',
+        new Chart(document.getElementById('paymentStatusChart'), {
+            type: 'doughnut',
             data: { labels: <?= json_encode($paymentStatusLabels) ?>, datasets: [{ data: <?= json_encode($paymentStatusData) ?>, backgroundColor: ['#2e7d32', '#c62828'] }] },
             options: { plugins: { legend: { position: 'bottom' } } }
         });
 
         /* PAYMENT METHOD BAR */
-        new Chart(paymentMethodChart, {
+        new Chart(document.getElementById('paymentMethodChart'), {
             type: 'bar',
             data: { labels: <?= json_encode($paymentMethodLabels) ?>, datasets: [{ data: <?= json_encode($paymentMethodData) ?>, backgroundColor: ['#1565c0', '#ef6c00'] }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 
-        /* MONTH-WISE ORDERS BAR */
-        new Chart(monthOrdersChart, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($monthLabels) ?>,
-                datasets: [
-                    { label: 'Paid', data: <?= json_encode($monthPaidOrders) ?>, backgroundColor: '#2e7d32' },
-                    { label: 'Unpaid', data: <?= json_encode($monthUnpaidOrders) ?>, backgroundColor: '#c62828' },
-                    { label: 'Delivered', data: <?= json_encode($monthDeliveredOrders) ?>, backgroundColor: '#4caf50' },
-                    { label: 'Pending', data: <?= json_encode($monthPendingOrders) ?>, backgroundColor: '#ff9800' }
-                ]
-            },
-            options: { plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-        });
-
-        /* YEAR-WISE ORDERS BAR */
-        new Chart(yearOrdersChart, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($yearLabels) ?>,
-                datasets: [
-                    { label: 'Paid', data: <?= json_encode($yearPaidOrders) ?>, backgroundColor: '#2e7d32' },
-                    { label: 'Unpaid', data: <?= json_encode($yearUnpaidOrders) ?>, backgroundColor: '#c62828' },
-                    { label: 'Delivered', data: <?= json_encode($yearDeliveredOrders) ?>, backgroundColor: '#4caf50' },
-                    { label: 'Pending', data: <?= json_encode($yearPendingOrders) ?>, backgroundColor: '#ff9800' }
-                ]
-            },
-            options: { plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-        });
+        /* PRODUCT CATEGORIES CHART */
+        (function() {
+            const catLabels = <?= json_encode($categoryLabels) ?>;
+            const catRevenue = <?= json_encode($categoryRevenue) ?>;
+            const catOrders = <?= json_encode($categoryOrders) ?>;
+            const catQty = <?= json_encode($categoryQuantity) ?>;
+            const canvas = document.getElementById('categoriesChart');
+            if (!catLabels || catLabels.length === 0) {
+                if (canvas && canvas.parentElement) {
+                    canvas.parentElement.innerHTML = '<p class="text-muted m-0">No categories found for the selected period.</p>';
+                }
+                return;
+            }
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: catLabels,
+                    datasets: [
+                        { 
+                            label: 'Revenue (Rs.)', 
+                            data: catRevenue, 
+                            type: 'bar',
+                            backgroundColor: 'rgba(46, 125, 50, 0.8)',
+                            borderColor: '#2e7d32',
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        { 
+                            label: 'Orders', 
+                            data: catOrders, 
+                            type: 'line',
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#2196f3',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: { 
+                        legend: { position: 'top' },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    if (context.datasetIndex === 0) {
+                                        return 'Revenue: Rs. ' + catRevenue[idx].toLocaleString('en-IN', {maximumFractionDigits: 0});
+                                    } else if (context.datasetIndex === 1) {
+                                        return 'Total Orders: ' + catOrders[idx];
+                                    }
+                                },
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 1) {
+                                        const idx = context.dataIndex;
+                                        return 'Quantity: ' + catQty[idx];
+                                    }
+                                }
+                            }
+                        }
+                    }, 
+                    scales: { 
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Revenue (Rs.)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Orders'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    } 
+                }
+            });
+        })();
     </script>
 
 </body>

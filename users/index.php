@@ -14,7 +14,7 @@ include_once '../shared/commonlinks.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Page</title>
 
-   <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/index.css">
 </head>
 
 <body>
@@ -45,12 +45,12 @@ include_once '../shared/commonlinks.php';
                             FROM products p
                             LEFT JOIN order_items oi ON p.id = oi.product_id
                             WHERE p.discount > 0";
-    
+
     if (!empty($seenIds)) {
         $idList = implode(',', array_keys($seenIds));
         $discountCarouselSql .= " AND p.id NOT IN ($idList)";
     }
-    
+
     $discountCarouselSql .= " GROUP BY p.id ORDER BY p.discount DESC, p.date_added DESC LIMIT 5";
 
     if ($discRes = $conn->query($discountCarouselSql)) {
@@ -67,12 +67,12 @@ include_once '../shared/commonlinks.php';
                       LEFT JOIN order_items oi ON p.id = oi.product_id
                       GROUP BY p.id
                       HAVING total_orders >= 10";
-    
+
     if (!empty($seenIds)) {
         $idList = implode(',', array_keys($seenIds));
         $bestsellerSql .= " AND p.id NOT IN ($idList)";
     }
-    
+
     $bestsellerSql .= " ORDER BY total_orders DESC LIMIT 1";
 
     if ($bestRes = $conn->query($bestsellerSql)) {
@@ -83,16 +83,17 @@ include_once '../shared/commonlinks.php';
     ?>
 
     <div class="container my-4">
-        <?php if (!empty($carouselSlides)) : ?>
+        <?php if (!empty($carouselSlides)): ?>
             <div id="heroCarousel" class="carousel slide carousel-fade carousel-hero" data-bs-ride="carousel">
                 <div class="carousel-indicators">
-                    <?php foreach ($carouselSlides as $idx => $_) : ?>
-                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<?= $idx ?>" class="<?= $idx === 0 ? 'active' : '' ?>" aria-label="Slide <?= $idx + 1 ?>"></button>
+                    <?php foreach ($carouselSlides as $idx => $_): ?>
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<?= $idx ?>"
+                            class="<?= $idx === 0 ? 'active' : '' ?>" aria-label="Slide <?= $idx + 1 ?>"></button>
                     <?php endforeach; ?>
                 </div>
 
                 <div class="carousel-inner">
-                    <?php foreach ($carouselSlides as $idx => $slide) :
+                    <?php foreach ($carouselSlides as $idx => $slide):
                         $sid = (int) $slide['id'];
                         $title = htmlspecialchars($slide['title']);
                         $desc = htmlspecialchars($slide['description'] ?? '');
@@ -101,7 +102,7 @@ include_once '../shared/commonlinks.php';
                         $price = (int) ($slide['price'] ?? 0);
                         $finalPrice = $discount > 0 ? $price - ($price * $discount / 100) : $price;
                         $badge = htmlspecialchars($slide['highlight']);
-                    ?>
+                        ?>
                         <div class="carousel-item carousel-item-hero <?= $idx === 0 ? 'active' : '' ?>">
                             <div class="carousel-gradient"></div>
                             <div class="container">
@@ -112,16 +113,20 @@ include_once '../shared/commonlinks.php';
                                                 <span class="carousel-badge d-inline-flex align-items-center gap-2">
                                                     <i class="bi bi-lightning-charge-fill text-warning"></i> <?= $badge ?>
                                                 </span>
-                                                <a class="btn btn-success btn-sm" href="view_jersey.php?id=<?= $sid ?>">View Jersey</a>
+                                                <a class="btn btn-success btn-sm" href="view_jersey.php?id=<?= $sid ?>">View
+                                                    Jersey</a>
                                             </div>
                                             <div class="title mt-2"><?= $title ?></div>
                                             <div class="d-flex align-items-center justify-content-between gap-3 mt-3">
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <?php if ($discount > 0) : ?>
-                                                        <span class="fs-6 text-decoration-line-through opacity-75">Rs <?= number_format($price) ?></span>
-                                                        <span class="fs-5 fw-bold text-warning">Rs <?= number_format($finalPrice) ?></span>
-                                                    <?php else : ?>
-                                                        <span class="fs-5 fw-bold text-warning">Rs <?= number_format($price) ?></span>
+                                                    <?php if ($discount > 0): ?>
+                                                        <span class="fs-6 text-decoration-line-through opacity-75">Rs
+                                                            <?= number_format($price) ?></span>
+                                                        <span class="fs-5 fw-bold text-warning">Rs
+                                                            <?= number_format($finalPrice) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="fs-5 fw-bold text-warning">Rs
+                                                            <?= number_format($price) ?></span>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -141,26 +146,26 @@ include_once '../shared/commonlinks.php';
                 </div>
 
             </div>
-        <?php else : ?>
+        <?php else: ?>
             <div class="alert alert-info mb-4">Add products to see the carousel highlights.</div>
         <?php endif; ?>
     </div>
     <!-- Explore Our Page -->
-        <h1 class="text-center mt-4  display-5 fw-bold animate__animated">
-                <span>Explore Our Page</span>
-        </h1>
+    <h1 class="text-center mt-4  display-5 fw-bold animate__animated">
+        <span>Explore Our Page</span>
+    </h1>
 
-                <div class="container my-2">
+    <div class="container my-2">
         <?php
         // Category-specific popular sections
         $categorySections = [
             'football' => ['title' => 'Football Jerseys', 'empty' => 'No football jerseys available.'],
-            'cricket' => ['title' => 'Cricket Jerseys', 'empty' => 'No cricket jerseys available.'],
+            'cricket' => ['title' => 'National team Cricket Jerseys', 'empty' => 'National team cricket jerseys not available.'],
             'npl' => ['title' => 'NPL Jerseys', 'empty' => 'No NPL jerseys available.'],
         ];
         ?>
 
-        <?php foreach ($categorySections as $catKey => $meta) :
+        <?php foreach ($categorySections as $catKey => $meta):
             $likeCat = $conn->real_escape_string($catKey);
             $catSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.quality, p.price, p.discount, p.category,
                               COALESCE(SUM(oi.quantity), 0) AS total_orders
@@ -171,7 +176,7 @@ include_once '../shared/commonlinks.php';
                        ORDER BY total_orders DESC, p.date_added DESC
                        LIMIT 6";
             $catRes = $conn->query($catSql);
-        ?>
+            ?>
             <hr class="my-3">
             <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
                 <div>
@@ -200,7 +205,8 @@ include_once '../shared/commonlinks.php';
                                     <?= $discount > 0 ? "<span class='badge bg-danger position-absolute' style='top:10px;right:10px;'>$discount% OFF</span>" : "" ?>
                                     <?= $orders >= 10 ? "<span class='badge bg-warning text-dark position-absolute' style='top:10px;left:10px;'>Bestseller</span>" : "" ?>
 
-                                    <img src='<?= $img ?>' class='card-img-top mx-auto mt-3' alt='<?= $title ?>' style='height:300px; width:auto; object-fit:contain;'>
+                                    <img src='<?= $img ?>' class='card-img-top mx-auto mt-3' alt='<?= $title ?>'
+                                        style='height:300px; width:auto; object-fit:contain;'>
 
                                     <div class='card-body p-2 d-flex flex-column'>
                                         <h6 class='card-title fw-semibold mb-1'><?= $title ?></h6>
@@ -208,10 +214,11 @@ include_once '../shared/commonlinks.php';
                                         <p class='card-text text-muted small mb-2' style='min-height:36px;'><?= $desc ?></p>
 
                                         <div class='d-flex justify-content-center align-items-center gap-2 mb-2'>
-                                            <?php if ($discount > 0) : ?>
-                                                <span style='text-decoration:line-through; color:#888;'>Rs <?= number_format($price) ?></span>
+                                            <?php if ($discount > 0): ?>
+                                                <span style='text-decoration:line-through; color:#888;'>Rs
+                                                    <?= number_format($price) ?></span>
                                                 <b class='text-success'>Rs <?= number_format($finalPrice) ?></b>
-                                            <?php else : ?>
+                                            <?php else: ?>
                                                 <b>Rs <?= number_format($price) ?></b>
                                             <?php endif; ?>
                                         </div>
@@ -229,7 +236,7 @@ include_once '../shared/commonlinks.php';
                 ?>
             </div>
         <?php endforeach; ?>
-        </div>
+    </div>
 
     <!-- Reach Us / Head Office -->
     <section class="container my-5">

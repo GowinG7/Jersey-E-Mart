@@ -74,6 +74,10 @@ $res = $stmt->get_result();
     <meta charset="UTF-8">
     <title>Orders | Admin Panel</title>
     <style>
+        body {
+            background-color: #f2f2f2 ! important;
+        }
+
         .admin-content {
             margin-top: 0 !important;
             border-top: 4px solid black;

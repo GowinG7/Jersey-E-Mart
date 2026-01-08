@@ -24,24 +24,6 @@ if ($discount > 0) {
     $displayPrice = $basePrice - ($basePrice * $discount / 100);
 }
 
-// Get related jerseys from same category
-$category = $p['category'];
-$relatedSql = "SELECT p.id, p.j_name AS title, p.image, p.price, p.discount,
-                       COALESCE(SUM(oi.quantity), 0) AS total_orders
-                FROM products p
-                LEFT JOIN order_items oi ON p.id = oi.product_id
-                WHERE LOWER(p.category) LIKE LOWER('" . $conn->real_escape_string($category) . "%')
-                AND p.id != $id
-                GROUP BY p.id
-                ORDER BY total_orders DESC, p.date_added DESC
-                LIMIT 6";
-$relatedResult = mysqli_query($conn, $relatedSql);
-$relatedProducts = [];
-if ($relatedResult) {
-    while ($rel = mysqli_fetch_assoc($relatedResult)) {
-        $relatedProducts[] = $rel;
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +31,7 @@ if ($relatedResult) {
 <head>
     <meta charset="UTF-8">
     <title><?php echo htmlspecialchars($p['j_name']); ?></title>
-   <link rel="stylesheeet" href="css/view_jersey.css">
+    <link rel="stylesheet" href="css/view_jersey.css">
 </head>
 
 <body style="background-color:#e9f8f6; font-family:Segoe UI;">
@@ -300,6 +282,27 @@ if ($relatedResult) {
 
     </script>
 
+    <!-- Related Products Section -->
+    <?php
+    // Get related jerseys from same category
+    $category = $p['category'];
+    $relatedSql = "SELECT p.id, p.j_name AS title, p.image, p.price, p.discount,
+                           COALESCE(SUM(oi.quantity), 0) AS total_orders
+                    FROM products p
+                    LEFT JOIN order_items oi ON p.id = oi.product_id
+                    WHERE LOWER(p.category) LIKE LOWER('" . $conn->real_escape_string($category) . "%')
+                    AND p.id != $id
+                    GROUP BY p.id
+                    ORDER BY total_orders DESC, p.date_added DESC
+                    LIMIT 6";
+    $relatedResult = mysqli_query($conn, $relatedSql);
+    $relatedProducts = [];
+    if ($relatedResult) {
+        while ($rel = mysqli_fetch_assoc($relatedResult)) {
+            $relatedProducts[] = $rel;
+        }
+    }
+    ?>
     <!-- Related Products Section -->
     <?php if (!empty($relatedProducts)): ?>
     <div class="container related-section">

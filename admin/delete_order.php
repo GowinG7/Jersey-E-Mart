@@ -21,13 +21,13 @@ $order = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$order) {
-    echo json_encode(['success' => false]);
+    echo json_encode(['success' => false, 'message' => 'Order not found.']);
     exit;
 }
 
 // Example rule: prevent deleting completed/pending shipped orders
 if ($order['order_status'] === 'Delivered' || $order['payment_status'] === 'Completed') {
-    echo json_encode(['success' => false]);
+    echo json_encode(['success' => false, 'message' => 'Cannot delete delivered orders or orders with completed payment.']);
     exit;
 }
 
@@ -43,4 +43,8 @@ $stmt->bind_param("i", $order_id);
 $success = $stmt->execute();
 $stmt->close();
 
-echo json_encode(['success' => $success]);
+if ($success) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+}
