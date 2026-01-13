@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once("../shared/dbconnect.php");
 include_once("../shared/commonlinks.php");
 
@@ -125,6 +127,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <a class="nav-link <?= $currentPage == 'jersies.php' ? 'active' : '' ?>" href="jersies.php">Jerseys</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link <?= $currentPage == 'stock_alerts.php' ? 'active' : '' ?>" href="stock_alerts.php">Stock Alerts</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?= $currentPage == 'jersey_sales.php' ? 'active' : '' ?>" href="jersey_sales.php">Jersey Sales</a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>" href="carousel.php">Carousel</a>
         </li>
         <li class="nav-item">
@@ -150,6 +158,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage == 'jersies.php' ? 'active' : '' ?>" href="jersies.php">Jerseys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'stock_alerts.php' ? 'active' : '' ?>" href="stock_alerts.php">Stock Alerts</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'jersey_sales.php' ? 'active' : '' ?>" href="jersey_sales.php">Jersey Sales</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage == 'carousel.php' ? 'active' : '' ?>"

@@ -50,6 +50,17 @@ if ($res->num_rows) {
   <meta charset="UTF-8">
   <title>Admin Panel - Carousel</title>
   <link rel="stylesheet" href="css/header.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .admin-content h3 {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #333;
+    }
+  </style>
 </head>
 
 <body>

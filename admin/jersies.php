@@ -1,5 +1,6 @@
 <?php
 require_once "../shared/dbconnect.php";
+require_once "../shared/commonlinks.php";
 
 
 /*  FETCH PRODUCT DATA FOR EDIT  */

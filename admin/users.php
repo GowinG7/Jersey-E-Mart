@@ -36,8 +36,17 @@ $users = $res->num_rows ? $res->fetch_all(MYSQLI_ASSOC) : [];
 <title>Admin Panel - Users</title>
 <link rel="stylesheet" href="css/header.css">
 <style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .admin-content h3 {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+    }
     .table-wrapper { overflow-x: auto; }
-    .btn-small { padding: 3px 10px; font-size: 0.9rem; }
+    .btn-small { padding: 3px 10px; font-size: 14px; }
     #notifyMsg {
         position: fixed;
         top: 80px;

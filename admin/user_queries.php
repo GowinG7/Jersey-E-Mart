@@ -61,13 +61,15 @@ if (isset($_POST['delete'])) {
     <title>User Queries | Admin Panel</title>
 
     <style>
-        .admin-content {
-            margin-top: 0 !important;
-            /* remove the 70px gap */
-            padding: 20px;
-            background-color: #00796b;
-            min-height: 100vh;
-            color: #1f1616ff;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .admin-content h3 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
         }
 
         .table-header {

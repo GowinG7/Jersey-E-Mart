@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once("../shared/dbconnect.php");
 require_once("../shared/commonlinks.php");
 
@@ -49,7 +51,7 @@ $avgOrderValue = $totalOrders > 0 ? ($totalPaidSales + $unpaidAmount) / $totalOr
 /* Additional KPIs */
 // Total items across filtered orders
 $itemsRes = $conn->query(
-    "SELECT COUNT(*) AS item_count
+    "SELECT SUM(oi.quantity) AS item_count
      FROM order_items oi
      JOIN orders o ON oi.order_id = o.order_id
      " . str_replace('WHERE', 'WHERE', $orderDateWhere) .
@@ -59,6 +61,11 @@ $totalItems = ($itemsRes && ($row = $itemsRes->fetch_assoc())) ? intval($row['it
 
 $avgItemsPerOrder = $totalOrders > 0 ? round($totalItems / $totalOrders, 2) : 0;
 $conversionRate = $totalOrders > 0 ? round(($paidOrders / $totalOrders) * 100, 2) : 0;
+
+/* STOCK ALERTS - Check for out of stock and low stock items */
+$outOfStockCount = $conn->query("SELECT COUNT(*) as count FROM product_sizes WHERE stock = 0")->fetch_assoc()['count'];
+$lowStockCount = $conn->query("SELECT COUNT(*) as count FROM product_sizes WHERE stock > 0 AND stock <= 5")->fetch_assoc()['count'];
+$totalStockIssues = $outOfStockCount + $lowStockCount;
 
 /* TOP PRODUCTS */
 $topProducts = $conn->query(
@@ -157,108 +164,129 @@ foreach ($predefCats as $cat) {
     <title>Admin Dashboard</title>
     
     <style>
-        body {
-            background: #f4f6f9;
-        }
-
-        .admin-content {
-            padding: 20px;
-            margin-top: 0px !important;
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
         }
 
         .stat-card {
-            padding: 12px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             color: #fff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, .15);
-            min-width: 190px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+            min-width: 200px;
         }
-        .stat-card p { margin: 0 0 4px; font-size: 12px; opacity: 0.9; }
-        .stat-card h4 { margin: 0; font-size: 20px; }
-
-        .bg1 {
-            background: #00695c;
+        .stat-card p { 
+            margin: 0 0 5px; 
+            font-size: 13px; 
+            opacity: 0.95; 
+            font-weight: 500;
         }
-
-        .bg2 {
-            background: #283593;
+        .stat-card h4 { 
+            margin: 0; 
+            font-size: 26px; 
+            font-weight: bold;
         }
-
-        .bg3 {
-            background: #ef6c00;
-        }
-
-        .bg4 {
-            background: #c62828;
+        .stat-card small {
+            font-size: 11px;
+            opacity: 0.9;
         }
 
-        .bg5 {
-            background: #2e7d32;
-        }
-
-        .bg6 {
-            background: #6a1b9a;
-        }
+        .bg1 { background: linear-gradient(135deg, #00695c 0%, #00897b 100%); }
+        .bg2 { background: linear-gradient(135deg, #283593 0%, #3949ab 100%); }
+        .bg3 { background: linear-gradient(135deg, #ef6c00 0%, #f57c00 100%); }
+        .bg4 { background: linear-gradient(135deg, #c62828 0%, #d32f2f 100%); }
+        .bg5 { background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%); }
+        .bg6 { background: linear-gradient(135deg, #6a1b9a 0%, #7b1fa2 100%); }
 
         .card {
-            border-radius: 10px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, .12);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+            border: none;
+        }
+
+        .card-header {
+            border-radius: 8px 8px 0 0 !important;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         .small-chart {
-            max-width: 260px;
+            max-width: 280px;
             margin: auto;
         }
 
         .filter-section {
             background: #fff;
-            padding: 15px;
+            padding: 18px;
             border-radius: 8px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+        }
+
+        .filter-section h6 {
+            font-weight: 600;
+            color: #333;
         }
 
         .filter-section input,
         .filter-section select {
             padding: 8px 12px;
-            margin-right: 10px;
+            margin-right: 8px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            font-size: 13px;
         }
 
         .filter-actions {
             gap: 8px;
         }
 
-        /* Compact KPI row: horizontal scroll, no wrap */
         .kpi-row {
             display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            gap: 12px;
-            -webkit-overflow-scrolling: touch;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
         }
-        .kpi-row > [class^="col-"], .kpi-row > [class*=" col-"] { flex: 0 0 auto; width: auto; }
+        
+        .kpi-row > .col-md-3 {
+            flex: 1;
+            min-width: 200px;
+        }
 
         .top-products {
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
         }
 
         .product-item {
             padding: 12px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f0f0f0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            transition: background 0.2s;
+        }
+
+        .product-item:hover {
+            background: #f9f9f9;
         }
 
         .product-img {
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             object-fit: cover;
-            border-radius: 5px;
-            margin-right: 10px;
+            border-radius: 6px;
+            margin-right: 12px;
+            border: 2px solid #f0f0f0;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-row {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
         }
     </style>
 </head>
@@ -269,7 +297,19 @@ foreach ($predefCats as $cat) {
 
     <div class="admin-content">
 
-        <h3 class="mb-4">📊 Dashboard Overview</h3>
+        <div class="dashboard-title">📊 Dashboard Overview</div>
+
+        <!-- STOCK ALERT BANNER -->
+        <?php if ($totalStockIssues > 0): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-left: 5px solid #ff6b6b;">
+            <strong>⚠️ Stock Alert!</strong> 
+            You have <strong><?php echo $totalStockIssues; ?></strong> items with stock issues 
+            (<strong><?php echo $outOfStockCount; ?></strong> out of stock, 
+            <strong><?php echo $lowStockCount; ?></strong> low stock).
+            <a href="stock_alerts.php" class="btn btn-warning btn-sm ms-2">View & Manage Stock</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php endif; ?>
 
         <!-- FILTER SECTION -->
         <div class="filter-section">
@@ -381,9 +421,9 @@ foreach ($predefCats as $cat) {
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stat-card bg3">
-                    <p>📦 Avg Items / Order</p>
+                    <p>📦 Items per Order</p>
                     <h4><?= $avgItemsPerOrder ?></h4>
-                    <small>Total items: <?= number_format($totalItems) ?></small>
+                    <small>Total items ordered: <?= number_format($totalItems) ?></small>
                 </div>
             </div>
         </div>
@@ -434,7 +474,7 @@ foreach ($predefCats as $cat) {
                                         <div>
                                             <strong><?= htmlspecialchars($product['j_name']) ?></strong>
                                             <br>
-                                            <small class="text-muted">Qty: <?= $product['total_qty'] ?> | Revenue: Rs. <?= number_format($product['total_revenue']) ?></small>
+                                            <small class="text-muted">Qty ordered: <?= $product['total_qty'] ?> | Revenue: Rs. <?= number_format($product['total_revenue']) ?></small>
                                         </div>
                                     </div>
                                 </div>
@@ -521,37 +561,14 @@ foreach ($predefCats as $cat) {
                         { 
                             label: 'Revenue (Rs.)', 
                             data: catRevenue, 
-                            type: 'bar',
                             backgroundColor: 'rgba(46, 125, 50, 0.8)',
                             borderColor: '#2e7d32',
-                            borderWidth: 1,
-                            yAxisID: 'y',
-                            order: 2
-                        },
-                        { 
-                            label: 'Orders', 
-                            data: catOrders, 
-                            type: 'line',
-                            borderColor: '#2196f3',
-                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 5,
-                            pointBackgroundColor: '#2196f3',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            yAxisID: 'y1',
-                            order: 1
+                            borderWidth: 1
                         }
                     ]
                 },
                 options: { 
                     responsive: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
                     plugins: { 
                         legend: { position: 'top' },
                         tooltip: {
@@ -562,43 +579,21 @@ foreach ($predefCats as $cat) {
                             callbacks: {
                                 label: function(context) {
                                     const idx = context.dataIndex;
-                                    if (context.datasetIndex === 0) {
-                                        return 'Revenue: Rs. ' + catRevenue[idx].toLocaleString('en-IN', {maximumFractionDigits: 0});
-                                    } else if (context.datasetIndex === 1) {
-                                        return 'Total Orders: ' + catOrders[idx];
-                                    }
+                                    return 'Revenue: Rs. ' + catRevenue[idx].toLocaleString('en-IN', {maximumFractionDigits: 0});
                                 },
                                 afterLabel: function(context) {
-                                    if (context.datasetIndex === 1) {
-                                        const idx = context.dataIndex;
-                                        return 'Quantity: ' + catQty[idx];
-                                    }
+                                    const idx = context.dataIndex;
+                                    return 'Orders: ' + catOrders[idx] + ' | Quantity: ' + catQty[idx];
                                 }
                             }
                         }
                     }, 
                     scales: { 
                         y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
                             beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Revenue (Rs.)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Orders'
-                            },
-                            grid: {
-                                drawOnChartArea: false
                             }
                         }
                     } 

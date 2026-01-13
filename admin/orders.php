@@ -75,13 +75,14 @@ $res = $stmt->get_result();
     <title>Orders | Admin Panel</title>
     <style>
         body {
-            background-color: #f2f2f2 ! important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        .admin-content {
-            margin-top: 0 !important;
-            border-top: 4px solid black;
-            background-color: #f2f2f2;
+        .admin-content h3 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
         }
 
         .table-header {
