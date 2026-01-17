@@ -13,7 +13,20 @@ try {
     // Get search parameters
     $key = strtolower(trim($_GET['q'] ?? ''));
     $sortBy = $_GET['sort'] ?? 'popularity';
-        $category = strtolower(trim($_GET['category'] ?? 'all'));
+    $categoryParam = strtolower(trim($_GET['category'] ?? 'all'));
+
+    // Map user-friendly category values to database values
+    $categoryMap = [
+        'football' => 'Football',
+        'cricket' => 'Cricket',
+        'npl' => 'NPL cricket',
+        'nsl' => 'NSL football'
+    ];
+
+    // Convert category parameter to database value
+    $category = ($categoryParam !== 'all' && isset($categoryMap[$categoryParam])) 
+        ? $categoryMap[$categoryParam] 
+        : 'all';
 
     /* 
        DATABASE SEARCH
@@ -29,7 +42,7 @@ try {
             $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
             $sql .= "WHERE (LOWER(p.j_name) LIKE ?  OR LOWER(p.category) LIKE ?  OR LOWER(p.country) LIKE ?  OR LOWER(p.quality) LIKE ?) ";
             if ($category !== 'all') {
-                $sql .= " AND LOWER(p.category) = ? ";
+                $sql .= " AND p.category = ? ";
             }
             $sql .= "GROUP BY p.id";
 
@@ -48,7 +61,7 @@ try {
             $sql .= "FROM products p ";
             $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
             if ($category !== 'all') {
-                $sql .= "WHERE LOWER(p.category) = ? ";
+                $sql .= "WHERE p.category = ? ";
             }
             $sql .= "GROUP BY p.id";
         
