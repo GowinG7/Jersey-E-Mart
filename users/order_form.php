@@ -47,6 +47,69 @@ include "header.php";
 
 <head>
   <title>Jersey E-mart: Order Form</title>
+  <style>
+    .payment-options {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .payment-option {
+      flex: 1;
+      min-width: 150px;
+      position: relative;
+    }
+
+    .payment-option input[type="radio"] {
+      display: none;
+    }
+
+    .payment-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      background: #f9f9f9;
+    }
+
+    .payment-label:hover {
+      border-color: #2c6b60;
+      background: #f0f8f7;
+    }
+
+    .payment-option input[type="radio"]:checked + .payment-label {
+      border-color: #2c6b60;
+      background: #e0f4f2;
+      box-shadow: 0 4px 12px rgba(44, 107, 96, 0.2);
+    }
+
+    .payment-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-icon img {
+      max-height: 60px;
+      max-width: 80px;
+      object-fit: contain;
+    }
+
+    .payment-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+  </style>
 </head>
 
 <body style="background-color: #e9f8f6;">
@@ -71,19 +134,29 @@ include "header.php";
           <div class="mb-3">
             <label class="form-label fw-semibold">Payment Option</label>
 
-            <!-- Cash on Delivery -->
-            <div class="form-check border rounded p-3 mb-2">
-              <input class="form-check-input" type="radio" name="payment_option" id="cod" value="Cash on Delivery"
-                checked>
-              <label class="form-check-label fw-bold" for="cod" >
-                <b style="color:gray;" >Cash on Delivery</b>
-              </label>
-            </div>
+            <div class="payment-options">
+              <!-- Cash on Delivery -->
+              <div class="payment-option">
+                <input type="radio" id="cod" name="payment_option" value="Cash on Delivery" checked>
+                <label for="cod" class="payment-label">
+                  <div class="payment-icon">💵</div>
+                  <div class="payment-name">Cash on Delivery</div>
+                </label>
+              </div>
 
+              <!-- Esewa -->
+              <div class="payment-option">
+                <input type="radio" id="esewa" name="payment_option" value="Esewa">
+                <label for="esewa" class="payment-label">
+                  <div class="payment-icon"><img src="images/esewa.png" alt="Esewa"></div>
+                  <div class="payment-name">Esewa</div>
+                </label>
+              </div>
+            </div>
           </div>
 
           <input type="hidden" name="grand_total" value="<?php echo intval($grand_total); ?>">
-          <button type="submit" id="submitBtn" class="btn btn-success w-100">Place order (Rs
+          <button type="submit" id="submitBtn" class="btn btn-success w-100 mt-3">Place order (Rs
             <?php echo number_format($grand_total); ?>)</button>
         </form>
       </div>
