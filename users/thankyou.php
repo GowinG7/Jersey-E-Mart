@@ -108,7 +108,13 @@ $stmt->close();
       <p>
         <strong>Order ID:</strong> #<?php echo $order['order_id']; ?><br>
         <strong>Order Date:</strong> <?php echo $order['order_date']; ?><br>
-        <strong>Payment Method:</strong> <?php echo htmlspecialchars($order['payment_option']); ?><br>
+        <strong>Payment Method:</strong> <?php 
+          if (!empty($order['payment_option'])) {
+            echo htmlspecialchars($order['payment_option']);
+          } else {
+            echo '<em style="color:red;">Not set</em>';
+          }
+        ?><br>
         <strong>Payment Status:</strong> <?php echo htmlspecialchars($order['payment_status']); ?><br>
         <strong>Delivery Location:</strong> <?php echo htmlspecialchars($order['location']); ?>
       </p>

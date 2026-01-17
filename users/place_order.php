@@ -16,8 +16,8 @@ $grand_total = intval($_POST['grand_total']);
 $shipping_cost = 150;
 
 // Validate input
-if ($name === "" || $location === "" || $contact === "" || !in_array($payment_option, ['Cash on Delivery', 'Online Payment'])) {
-    $_SESSION['alert'] = "Invalid order data.";
+if ($name === "" || $location === "" || $contact === "" || $payment_option !== 'Cash on Delivery') {
+    $_SESSION['alert'] = "Invalid order data. Only Cash on Delivery is available.";
     $_SESSION['alert_type'] = "danger";
     header("Location: order_form.php");
     exit();
@@ -66,9 +66,13 @@ try {
     // Insert order
     $stmt = $conn->prepare("
         INSERT INTO orders (user_id, name, location, grand_total, payment_option, payment_status, order_status) 
-        VALUES (?, ?, ?, ?, ?, 'Pending', 'Pending')
+        VALUES (?, ?, ?, ?, ?, ?, 'Pending')
     ");
-    $stmt->bind_param("issis", $user_id, $name, $location, $grand_total, $payment_option);
+    
+    // Set payment_status
+    $payment_status = 'Pending';
+    
+    $stmt->bind_param("ississ", $user_id, $name, $location, $grand_total, $payment_option, $payment_status);
     $stmt->execute();
     $order_id = $stmt->insert_id;
     $stmt->close();
@@ -132,6 +136,13 @@ try {
 
     $conn->commit();
 
+    // Payment routing
+    if ($payment_option === 'Esewa') {
+        header("Location: esewa_payment.php?order_id=" . $order_id);
+        exit();
+    }
+
+    // COD
     header("Location: thankyou.php?order_id=" . $order_id);
     exit();
 

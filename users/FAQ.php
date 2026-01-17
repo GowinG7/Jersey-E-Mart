@@ -37,7 +37,7 @@ include_once 'header.php'; ?>
       <p>Ans: Select a jersey, add it to cart, and proceed to checkout.</p>
 
       <h4>QN)Which payment methods are available?</h4>
-      <p>Ans: Cash on Delivery and Online Payment (eSewa).</p>
+      <p>Ans: Cash on Delivery and eSewa.</p>
       <h4>Can I cancel my order?</h4>
       <p>Ans: To cancel the orders, users directly have to contact admin within 2-5 hours.</p>
 

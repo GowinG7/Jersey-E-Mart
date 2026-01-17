@@ -94,7 +94,11 @@ include_once '../shared/commonlinks.php';
 
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $idx => $slide):
-                        $sid = (int) $slide['id'];
+                        $sid = (int) ($slide['id'] ?? 0);
+                        
+                        // Skip if product ID is invalid
+                        if ($sid <= 0) continue;
+                        
                         $title = htmlspecialchars($slide['title']);
                         $desc = htmlspecialchars($slide['description'] ?? '');
                         $img = !empty($slide['image']) ? '../shared/products/' . htmlspecialchars($slide['image']) : 'images/placeholder.png';

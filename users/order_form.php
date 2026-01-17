@@ -2,7 +2,6 @@
 session_start();
 require_once "../shared/dbconnect.php";
 include_once "../shared/commonlinks.php";
-include "header.php";
 
 if (!isset($_SESSION['user_id'])) {
   $_SESSION['alert'] = "Please login to place an order.";
@@ -38,6 +37,9 @@ foreach ($items as $it) {
 $grand_total += $shipping_cost; // add flat shipping once
 
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : '';
+
+// Include header after all header() redirects are done
+include "header.php";
 ?>
 
 <!doctype html>
@@ -52,7 +54,7 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : '';
 
     <div class="row">
       <div class="col-md-6 mb-4">
-        <form action="place_order.php" method="post" class="bg-white p-4 rounded shadow-sm">
+        <form id="orderForm" action="place_order.php" method="post" class="bg-white p-4 rounded shadow-sm">
           <div class="mb-3">
             <label>Full name</label>
             <input type="text" name="name" class="form-control" required>
@@ -78,20 +80,10 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : '';
               </label>
             </div>
 
-            <!-- eSewa Online Payment -->
-            <div class="form-check border rounded p-3 d-flex align-items-center gap-3">
-              <input class="form-check-input" type="radio" name="payment_option" id="esewa" value="Online Payment">
-              <label class="form-check-label d-flex align-items-center gap-2" for="esewa">
-                <img src="images/esewa.png" alt="eSewa" style="height:55px;object-fit:contain;">
-                <span class="fw-bold">
-                  <h4 style="color:green;">eSewa</h4>
-                </span>
-              </label>
-            </div>
           </div>
 
           <input type="hidden" name="grand_total" value="<?php echo intval($grand_total); ?>">
-          <button type="submit" class="btn btn-success w-100">Place order (Rs
+          <button type="submit" id="submitBtn" class="btn btn-success w-100">Place order (Rs
             <?php echo number_format($grand_total); ?>)</button>
         </form>
       </div>
@@ -139,6 +131,8 @@ $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : '';
       </div>
     </div>
   </div>
+
+
 </body>
 
 </html>
