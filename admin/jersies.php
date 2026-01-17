@@ -199,17 +199,7 @@ if (isset($_GET['del'])) {
     <title>Jersey Inventory</title>
     <?php include_once '../shared/commonlinks.php'; ?>
     <link rel="stylesheet" href="css/header.css">
-    <style>
-        body {
-            background: #e9fffa;
-        }
-
-        .table-header {
-            background: #00796b;
-            color: #fff;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="css/jersies.css">
 </head>
 
 <body>

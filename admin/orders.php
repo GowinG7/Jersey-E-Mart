@@ -73,47 +73,7 @@ $res = $stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <title>Orders | Admin Panel</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        .admin-content h3 {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .table-header {
-            background: #00796b;
-            color: #fff;
-        }
-
-        .badge-status {
-            font-size: 0.85rem;
-        }
-
-        .bulk-actions {
-            margin-bottom: 15px;
-        }
-
-        .modal-img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-        }
-
-        .search-form {
-            margin-bottom: 15px;
-        }
-
-        .search-form input,
-        .search-form select {
-            padding: 5px 8px;
-            margin-right: 8px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/orders.css">
 </head>
 
 <body>
@@ -140,7 +100,8 @@ $res = $stmt->get_result();
             <a href="user_orders.php?start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="btn btn-sm btn-info">View Users Summary</a>
         </form>
 
-        <table class="table table-bordered table-striped">
+        <div class="table-wrapper">
+            <table class="table table-bordered table-striped">
             <thead class="table-dark">
                 <tr>
                     <th>Order ID</th>
@@ -229,6 +190,7 @@ $res = $stmt->get_result();
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
 
     </div>
 
