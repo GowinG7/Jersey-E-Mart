@@ -1,0 +1,69 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-content {
+    padding: 20px;
+    background: #e5f0eb;
+    margin-top: var(--admin-topbar-height);
+    margin-left: 0;
+    min-height: calc(100vh - var(--admin-topbar-height));
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+@media (min-width: 992px) {
+    .admin-content {
+        margin-left: var(--admin-sidebar-width);
+        width: calc(100% - var(--admin-sidebar-width));
+    }
+}
+
+.admin-content h3 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    min-width: 600px;
+}
+
+.table-header {
+    background: #00796b;
+    color: #fff;
+}
+
+.badge-status {
+    font-size: 0.85rem;
+}
+
+.bulk-actions {
+    margin-bottom: 15px;
+}
+
+.modal-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+}
+
+.search-form {
+    margin-bottom: 15px;
+}
+
+.search-form input,
+.search-form select {
+    padding: 5px 8px;
+    margin-right: 8px;
+}
