@@ -186,6 +186,7 @@ include_once '../shared/commonlinks.php';
                         <div style="min-width:180px;">
                             <select id="sortFilter" class="form-select" onchange="filterAndSort()">
                                 <option value="popularity" selected>Most Popular</option>
+                                <option value="discount">Top Discount</option>
                                 <option value="price_low">Price: Low to High</option>
                                 <option value="price_high">Price: High to Low</option>
                             </select>

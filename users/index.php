@@ -19,18 +19,18 @@ include_once '../shared/commonlinks.php';
 
 <body>
     <?php
-    // Build carousel slides: Most Popular products (top 2) + Top Discount products (top 2) + Bestseller
+    // Build carousel slides: Most Popular + Top Discount + Bestseller
     $carouselSlides = [];
     $seenIds = [];
 
-    // 1. Get top 5 Most Popular products
+    // 1. Get top 3 Most Popular products
     $popularCarouselSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.category, p.price, p.discount, 
                                    COALESCE(SUM(oi.quantity), 0) AS total_orders
                             FROM products p
                             LEFT JOIN order_items oi ON p.id = oi.product_id
                             GROUP BY p.id
                             ORDER BY total_orders DESC, p.date_added DESC
-                            LIMIT 5";
+                            LIMIT 3";
 
     if ($popRes = $conn->query($popularCarouselSql)) {
         while ($row = $popRes->fetch_assoc()) {
@@ -39,7 +39,7 @@ include_once '../shared/commonlinks.php';
         }
     }
 
-    // 2. Get top 2 Discount products that aren't already shown
+    // 2. Get top 4 Discount products (ensure we show discount items)
     $discountCarouselSql = "SELECT p.id, p.j_name AS title, p.description, p.image, p.category, p.price, p.discount,
                                    COALESCE(SUM(oi.quantity), 0) AS total_orders
                             FROM products p
@@ -51,7 +51,7 @@ include_once '../shared/commonlinks.php';
         $discountCarouselSql .= " AND p.id NOT IN ($idList)";
     }
 
-    $discountCarouselSql .= " GROUP BY p.id ORDER BY p.discount DESC, p.date_added DESC LIMIT 5";
+    $discountCarouselSql .= " GROUP BY p.id ORDER BY p.discount DESC, p.date_added DESC LIMIT 4";
 
     if ($discRes = $conn->query($discountCarouselSql)) {
         while ($row = $discRes->fetch_assoc()) {
@@ -95,10 +95,11 @@ include_once '../shared/commonlinks.php';
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $idx => $slide):
                         $sid = (int) ($slide['id'] ?? 0);
-                        
+
                         // Skip if product ID is invalid
-                        if ($sid <= 0) continue;
-                        
+                        if ($sid <= 0)
+                            continue;
+
                         $title = htmlspecialchars($slide['title']);
                         $desc = htmlspecialchars($slide['description'] ?? '');
                         $img = !empty($slide['image']) ? '../shared/products/' . htmlspecialchars($slide['image']) : 'images/placeholder.png';
@@ -123,6 +124,12 @@ include_once '../shared/commonlinks.php';
                                             <div class="title mt-2"><?= $title ?></div>
                                             <div class="d-flex align-items-center justify-content-between gap-3 mt-3">
                                                 <div class="d-flex align-items-center gap-2">
+                                                    <?php if ($discount > 6): ?>
+                                                        <span class="badge bg-danger me-2"
+                                                            style="font-size:0.9em;padding:6px 10px;">
+                                                            Top Discount
+                                                        </span>
+                                                    <?php endif; ?>
                                                     <?php if ($discount > 0): ?>
                                                         <span class="fs-6 text-decoration-line-through opacity-75">Rs
                                                             <?= number_format($price) ?></span>
