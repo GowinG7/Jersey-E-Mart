@@ -1,7 +1,5 @@
 <?php
 require_once "../shared/dbconnect.php";
-require_once "../shared/commonlinks.php";
-
 
 /*  FETCH PRODUCT DATA FOR EDIT  */
 if (isset($_POST['fetch_product'])) {
@@ -191,6 +189,7 @@ if (isset($_GET['del'])) {
     header("Location: jersies.php");
     exit;
 }
+
 ?>
 
 <html>
@@ -290,13 +289,14 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Add Jersey</h5>
                     <hr>
+                    <!-- ADD MODAL form -->
                     <form method="POST" enctype="multipart/form-data" class="row g-2"
-                        onsubmit="return validateJerseyForm();">
+                        onsubmit="return validateJerseyForm(this);">
                         <!-- Product fields -->
-                        <div class="col-md-6"><input class="form-control" name="j_name" required
+                        <div class="col-md-12"><input class="form-control" name="j_name" required
                                 placeholder="Enter Jersey Name...">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-7">
                             <select class="form-select" name="category" id="add_category" aria-label="Category">
                                 <option value="">Select Category</option>
                                 <option>Football</option>
@@ -305,10 +305,10 @@ if (isset($_GET['del'])) {
                                 <option>NSL football</option>
                             </select>
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="country"
+                        <div class="col-md-7"><input class="form-control" name="country"
                                 placeholder="Enter the name of country this jersey is..">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <select class="form-select" name="quality" id="add_quality" aria-label="Quality">
                                 <option value="">Select Quality</option>
                                 <option>Premium</option>
@@ -316,9 +316,9 @@ if (isset($_GET['del'])) {
                                 <option>replicas</option>
                             </select>
                         </div>
-                        <div class="col-md-3"><input class="form-control" name="price" type="number"
+                        <div class="col-md-6"><input class="form-control" name="price" type="number"
                                 placeholder="Enter price in Rs."></div>
-                        <div class="col-md-3"><input class="form-control" name="discount" type="number"
+                        <div class="col-md-6"><input class="form-control" name="discount" type="number"
                                 placeholder="Enter discount in %"></div>
                         <div class="col-12"><textarea class="form-control" name="description"
                                 placeholder="Write description..."></textarea></div>
@@ -341,8 +341,9 @@ if (isset($_GET['del'])) {
                 <div class="modal-content p-3">
                     <h5>Edit Jersey</h5>
                     <hr>
+                    <!-- EDIT MODAL form -->
                     <form method="POST" enctype="multipart/form-data" class="row g-2" id="editForm"
-                        onsubmit="return validateJerseyForm();">
+                        onsubmit="return validateJerseyForm(this);">
                         <input type="hidden" name="edit_id" id="edit_id">
                         <!-- Edit fields -->
                         <div class="col-md-6"><input class="form-control" name="j_name" id="edit_name" required
@@ -412,7 +413,8 @@ if (isset($_GET['del'])) {
 
 
     <script>
-
+        console.log("Bootstrap loaded:", typeof bootstrap !== 'undefined');
+        console.log("Edit modal element:", document.getElementById('editModal'));
     </script>
     <script src="js/jersies.js"></script>
 </body>

@@ -206,8 +206,7 @@ include_once '../shared/commonlinks.php';
                             <a href='view_jersey.php?id=<?= $id ?>' class='text-decoration-none text-dark'>
                                 <div class='card text-center shadow-sm border-0 h-100 position-relative'>
 
-                                    <?= $discount > 0 ? "<span class='badge bg-danger position-absolute' style='top:10px;right:10px;'>$discount% OFF</span>" : "" ?>
-                                    <?= $orders >= 10 ? "<span class='badge bg-warning text-dark position-absolute' style='top:10px;left:10px;'>Bestseller</span>" : "" ?>
+                                    <?= $discount > 0 ? "<span class='badge bg-danger position-absolute' style='top:10px;right:10px;z-index:10;'>$discount% OFF</span>" : "" ?>
 
                                     <img src='<?= $img ?>' class='card-img-top mx-auto mt-3' alt='<?= $title ?>'
                                         style='height:300px; width:auto; object-fit:contain;'>
