@@ -44,7 +44,6 @@ $deliveredOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders
 $pendingOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.order_status='Pending'")->fetch_assoc()['t'];
 
 $codOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.payment_option='Cash on Delivery'")->fetch_assoc()['t'];
-$onlineOrders = $conn->query("SELECT COUNT(DISTINCT o.order_id) t FROM orders o $catJoin $orderDateWhere $catWhereOrders AND o.payment_option='Esewa'")->fetch_assoc()['t'];
 
 $avgOrderValue = $totalOrders > 0 ? ($totalPaidSales + $unpaidAmount) / $totalOrders : 0;
 
@@ -96,8 +95,8 @@ $paymentStatusLabels = ['Completed', 'Pending'];
 $paymentStatusData = [$paidOrders, $unpaidOrders];
 
 /*  PAYMENT METHOD DATA  */
-$paymentMethodLabels = ['Cash on Delivery', 'Esewa'];
-$paymentMethodData = [$codOrders, $onlineOrders];
+$paymentMethodLabels = ['Cash on Delivery'];
+$paymentMethodData = [$codOrders];
 
 /*  CATEGORY-WISE SUMMARY  */
 $categoryLabels = [];
@@ -410,7 +409,7 @@ foreach ($predefCats as $cat) {
         /* PAYMENT METHOD BAR */
         new Chart(document.getElementById('paymentMethodChart'), {
             type: 'bar',
-            data: { labels: <?= json_encode($paymentMethodLabels) ?>, datasets: [{ data: <?= json_encode($paymentMethodData) ?>, backgroundColor: ['#1565c0', '#ef6c00'] }] },
+            data: { labels: <?= json_encode($paymentMethodLabels) ?>, datasets: [{ data: <?= json_encode($paymentMethodData) ?>, backgroundColor: ['#1565c0'] }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 

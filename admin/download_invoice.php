@@ -184,7 +184,7 @@ $shipping_cost = 150;
                         </p>
                         <p>
                             <span class="label">Base Price:</span> RS.
-                            <?php echo number_format($it['base_price'], 2); ?> |
+                            <?php echo number_format($it['base_price']); ?> |
                             <span class="label">Discount:</span>
                             <?php echo $discount; ?>
                         </p>
@@ -201,13 +201,13 @@ $shipping_cost = 150;
                         </p>
                         <p>
                             <span class="label">Print Cost:</span>
-                            <?php echo ($it['print_cost'] > 0) ? 'RS. ' . number_format($it['print_cost'], 2) : 'No Print'; ?>
+                            <?php echo ($it['print_cost'] > 0) ? 'RS. ' . number_format($it['print_cost']) : 'No Print'; ?>
                             |
                             <span class="label">Final Price:</span> RS.
-                            <?php echo number_format($it['final_price'], 2); ?>
+                            <?php echo number_format($it['final_price']); ?>
                         </p>
                         <p><span class="label">Subtotal:</span> RS.
-                            <?php echo number_format($it['subtotal'], 2); ?>
+                            <?php echo number_format($it['subtotal']); ?>
                         </p>
                     </div>
 

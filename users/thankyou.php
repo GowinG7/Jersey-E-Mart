@@ -1,22 +1,24 @@
-<!-- user le order garisake paxi final orders summary dekhaune page checkout page -->
 <?php
+// <!-- user le order garisake paxi final orders summary dekhaune page checkout page -->
 session_start();
 require_once "../shared/dbconnect.php";
 include_once "../shared/commonlinks.php";
 include "header.php";
 
-if (!isset($_GET['order_id'])) {
+if (!isset($_SESSION['user_id']) || !isset($_GET['order_id'])) {
   header("Location: index.php");
   exit();
 }
 
 $order_id = intval($_GET['order_id']);
+$user_id = intval($_SESSION['user_id']);
 
 /* FETCH ORDER */
 $stmt = $conn->prepare("
-    SELECT order_id, name, location, grand_total, payment_option, payment_status, order_date 
-    FROM orders 
-    WHERE order_id = ? LIMIT 1
+  SELECT order_id, user_id, name, location, grand_total, order_date,
+       payment_option, payment_status, order_status, transaction_id
+  FROM orders 
+  WHERE order_id = ? LIMIT 1
 ");
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
@@ -28,13 +30,13 @@ if (!$order) {
   exit();
 }
 
-/* FETCH ORDER ITEMS (ONLY EXISTING COLUMNS) */
+/* FETCH ORDER ITEMS */
 $stmt = $conn->prepare("
     SELECT pname, jersey_size, quality, quantity, final_price, subtotal,
-           shipping, product_image
+         shipping, product_image, print_name, print_number
     FROM order_items
     WHERE order_id = ?
-");
+  ");
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
 $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -107,16 +109,20 @@ $stmt->close();
       <h3>Thank you, <?php echo htmlspecialchars($order['name']); ?></h3>
       <p>
         <strong>Order ID:</strong> #<?php echo $order['order_id']; ?><br>
-        <strong>Order Date:</strong> <?php echo $order['order_date']; ?><br>
-        <strong>Payment Method:</strong> <?php 
-          if (!empty($order['payment_option'])) {
-            echo htmlspecialchars($order['payment_option']);
-          } else {
-            echo '<em style="color:red;">Not set</em>';
-          }
-        ?><br>
-        <strong>Payment Status:</strong> <?php echo htmlspecialchars($order['payment_status']); ?><br>
-        <strong>Delivery Location:</strong> <?php echo htmlspecialchars($order['location']); ?>
+        <strong>Order Date:</strong> <?php echo date('F j, Y, g:i a', strtotime($order['order_date'])); ?><br>
+        <strong>Delivery Location:</strong> <?php echo htmlspecialchars($order['location']); ?><br>
+        <strong>Payment Method:</strong> <?php echo htmlspecialchars($order['payment_option']); ?><br>
+        <?php if (!empty($order['transaction_id'])): ?>
+          <strong>Transaction ID:</strong> <?php echo htmlspecialchars($order['transaction_id']); ?><br>
+        <?php endif; ?>
+        <strong>Payment Status:</strong> 
+        <span class="badge <?php echo $order['payment_status'] === 'Completed' ? 'bg-success' : 'bg-warning'; ?>">
+          <?php echo htmlspecialchars($order['payment_status']); ?>
+        </span><br>
+        <strong>Order Status:</strong> 
+        <span class="badge <?php echo $order['order_status'] === 'Delivered' ? 'bg-success' : 'bg-info'; ?>">
+          <?php echo htmlspecialchars($order['order_status']); ?>
+        </span>
       </p>
 
       <hr>
@@ -133,8 +139,18 @@ $stmt->close();
             <p><span class="label">Product:</span> <?php echo htmlspecialchars($it['pname']); ?></p>
             <p><span class="label">Size:</span> <?php echo htmlspecialchars($it['jersey_size']); ?></p>
             <p><span class="label">Quality:</span> <?php echo htmlspecialchars($it['quality']); ?></p>
+            <?php if (!empty($it['print_name']) || !empty($it['print_number'])): ?>
+              <p><span class="label">Customization:</span> 
+                <?php 
+                  $custom = [];
+                  if (!empty($it['print_name'])) $custom[] = htmlspecialchars($it['print_name']);
+                  if (!empty($it['print_number'])) $custom[] = htmlspecialchars($it['print_number']);
+                  echo implode(' # ', $custom);
+                ?>
+              </p>
+            <?php endif; ?>
             <p><span class="label">Quantity:</span> <?php echo intval($it['quantity']); ?></p>
-            <p><span class="label">Rate:</span> Rs <?php echo number_format($it['final_price']); ?></p>
+            <p><span class="label">Price per item:</span> Rs <?php echo number_format($it['final_price']); ?></p>
 
             <p style="font-weight:bold;">
               Subtotal: Rs <?php echo number_format($it['subtotal']); ?>
@@ -144,9 +160,9 @@ $stmt->close();
       <?php endforeach; ?>
 
       <div class="total-box">
-        <p><span class="label">Shipping cost:</span> Rs <?php echo number_format($it['shipping']); ?></p>
-
-        Grand Total: Rs <?php echo number_format($order['grand_total']); ?>
+        <?php $shipping_val = isset($items[0]['shipping']) ? $items[0]['shipping'] : 0; ?>
+        <p><span class="label">Shipping Cost:</span> Rs <?php echo number_format($shipping_val); ?></p>
+        <p><span class="label">Grand Total:</span> Rs <?php echo number_format($order['grand_total']); ?></p>
       </div>
 
       <div class="mt-4 no-print">

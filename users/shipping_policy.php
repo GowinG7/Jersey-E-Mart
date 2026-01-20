@@ -33,7 +33,7 @@ include_once 'header.php';
 
             <ul>
                 <li>Delivery Time: 2-3 working days</li>
-                <li>Shipping Charge: Calculated at checkout</li>
+                <li>Shipping Charge: Out of Chitwan district there we charged some extra fee </li>
                 <li>Remote areas may take additional time</li>
             </ul>
 

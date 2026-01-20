@@ -83,7 +83,7 @@ include "header.php";
       background: #f0f8f7;
     }
 
-    .payment-option input[type="radio"]:checked + .payment-label {
+    .payment-option input[type="radio"]:checked+.payment-label {
       border-color: #2c6b60;
       background: #e0f4f2;
       box-shadow: 0 4px 12px rgba(44, 107, 96, 0.2);
@@ -137,7 +137,7 @@ include "header.php";
             <div class="payment-options">
               <!-- Cash on Delivery -->
               <div class="payment-option">
-                <input type="radio" id="cod" name="payment_option" value="Cash on Delivery" checked>
+                <input type="radio" id="cod" name="payment_option" value="cod" checked>
                 <label for="cod" class="payment-label">
                   <div class="payment-icon">💵</div>
                   <div class="payment-name">Cash on Delivery</div>
@@ -146,7 +146,7 @@ include "header.php";
 
               <!-- Esewa -->
               <div class="payment-option">
-                <input type="radio" id="esewa" name="payment_option" value="Esewa">
+                <input type="radio" id="esewa" name="payment_option" value="esewa">
                 <label for="esewa" class="payment-label">
                   <div class="payment-icon"><img src="images/esewa.png" alt="Esewa"></div>
                   <div class="payment-name">Esewa</div>
