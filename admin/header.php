@@ -10,6 +10,13 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+// Fetch admin username
+$admin_id = $_SESSION['admin_id'];
+$admin_query = "SELECT username FROM admin_creden WHERE id = $admin_id";
+$admin_result = mysqli_query($conn, $admin_query);
+$admin_data = mysqli_fetch_assoc($admin_result);
+$admin_username = $admin_data['username'] ?? 'Admin';
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 
@@ -32,6 +39,23 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         z-index: 1050;
         display: flex;
         align-items: center;
+    }
+
+    .admin-welcome {
+        color: #fff;
+        font-size: 0.9rem;
+        margin-right: 10px;
+    }
+
+    .admin-welcome strong {
+        color: #a8e6a3;
+    }
+
+    /* Responsive font size for small screens */
+    @media (max-width: 576px) {
+        .admin-welcome {
+            font-size: 0.75rem;
+        }
     }
 
     /*  SIDEBAR  */
@@ -190,7 +214,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <span class="navbar-brand fw-bold mb-0">Admin Panel</span>
         </div>
 
-        <!-- Logout always visible -->
-        <a href="logout.php" class="btn btn-light btn-sm">Logout</a>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Welcome message - now visible on all screens -->
+            <span class="admin-welcome">
+                Welcome, <strong><?= htmlspecialchars($admin_username) ?></strong>
+            </span>
+            
+            <!-- Logout always visible -->
+            <a href="logout.php" class="btn btn-light btn-sm">Logout</a>
+        </div>
     </div>
 </nav>
