@@ -185,10 +185,12 @@ include_once '../shared/commonlinks.php';
                         </div>
                         <div style="min-width:180px;">
                             <select id="sortFilter" class="form-select" onchange="filterAndSort()">
-                                <option value="popularity" selected>Most Popular</option>
-                                <option value="discount">Top Discount</option>
+                                <option value="all">All Products</option>
+                                <option value="popularity">Popularity</option>
                                 <option value="price_low">Price: Low to High</option>
                                 <option value="price_high">Price: High to Low</option>
+                                <option value="discount">Discount %</option>
+                                <option value="newest">Newest</option>
                             </select>
                         </div>
                     </div>
@@ -419,7 +421,7 @@ include_once '../shared/commonlinks.php';
                 if (p.is_trending) badges += `<span class="badge badge-overlay bg-success position-absolute" style="top:${p.is_bestseller || p.discount >= 15 ? '70px' : '40px'};left:10px;">Trending</span>`;
                 
                 const priceHTML = p.discount > 0 
-                    ? `<span style="text-decoration:line-through;color:#888;">Rs ${p.price.toLocaleString()}</span>
+                    ? `<span style="text-decoration:line-through; color:#888;">Rs ${p.price.toLocaleString()}</span>
                        <b class="ms-2 text-success">Rs ${Math.floor(finalPrice).toLocaleString()}</b>`
                     : `<b>Rs ${p.price.toLocaleString()}</b>`;
                 

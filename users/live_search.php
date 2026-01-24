@@ -165,14 +165,18 @@ try {
        SORTING (Professional E-commerce Standards)
     */
     switch ($sortBy) {
+        case 'all':
+            // Show all products - default to popularity
+            usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
+            break;
+
         case 'popularity':
             // Most ordered first (collaborative filtering)
             usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
             break;
 
         case 'discount':
-            // Filter to only show products with discount > 0, then sort by highest discount
-            $products = array_filter($products, fn($p) => $p['discount'] > 0);
+            // Sort by highest discount (show all jerseys, not just with discount)
             usort($products, fn($a, $b) => $b['discount'] <=> $a['discount']);
             break;
 
