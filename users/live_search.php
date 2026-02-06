@@ -2,226 +2,160 @@
 header('Content-Type: application/json');
 require_once '../shared/dbconnect.php';
 
-// Error handling
-if (!$conn) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed', 'products' => []]);
-    exit;
+/* 
+   READ INPUT VALUES
+ */
+$key = isset($_GET['q']) ? strtolower(trim($_GET['q'])) : "";
+$sortBy = isset($_GET['sort']) ? $_GET['sort'] : "popularity";
+$category = isset($_GET['category']) ? $_GET['category'] : "all";
+
+/* 
+   CATEGORY VALUE MAPPING
+ */
+$categoryMap = [
+    'football' => 'Football',
+    'cricket' => 'Cricket',
+    'npl' => 'NPL cricket',
+    'nsl' => 'NSL football'
+];
+
+if ($category != "all" && isset($categoryMap[$category])) {
+    $category = $categoryMap[$category];
 }
 
-try {
-    // Get search parameters
-    $key = strtolower(trim($_GET['q'] ?? ''));
-    $sortBy = $_GET['sort'] ?? 'popularity';
-    $categoryParam = strtolower(trim($_GET['category'] ?? 'all'));
+/* 
+   LOAD PRODUCTS FROM DATABASE
+ */
+$sql = "SELECT p.*, COALESCE(SUM(oi.quantity),0) AS total_orders
+        FROM products p
+        LEFT JOIN order_items oi ON p.id = oi.product_id
+        GROUP BY p.id";
 
-    // Map user-friendly category values to database values
-    $categoryMap = [
-        'football' => 'Football',
-        'cricket' => 'Cricket',
-        'npl' => 'NPL cricket',
-        'nsl' => 'NSL football'
-    ];
+$result = mysqli_query($conn, $sql);
 
-    // Convert category parameter to database value
-    $category = ($categoryParam !== 'all' && isset($categoryMap[$categoryParam]))
-        ? $categoryMap[$categoryParam]
-        : 'all';
-
-    /* 
-       DATABASE SEARCH
-       If search query exists, filter by name/category/country/quality
-       If no search, load all products
-    */
-    if ($key !== '') {
-        // Search mode - filter by search query
-        $sql = "SELECT p.id, p.j_name, p.image, p.price, p.discount, p.quality, ";
-        $sql .= "p.description, p.category, p.country, p.date_added, ";
-        $sql .= "COALESCE(SUM(oi.quantity), 0) as total_orders ";
-        $sql .= "FROM products p ";
-        $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
-        $sql .= "WHERE (LOWER(p.j_name) LIKE ?  OR LOWER(p.category) LIKE ?  OR LOWER(p.country) LIKE ?  OR LOWER(p.quality) LIKE ?) ";
-        if ($category !== 'all') {
-            $sql .= " AND p.category = ? ";
-        }
-        $sql .= "GROUP BY p.id";
-
-        $stmt = $conn->prepare($sql);
-        $searchPattern = "%{$key}%";
-        if ($category !== 'all') {
-            $stmt->bind_param("sssss", $searchPattern, $searchPattern, $searchPattern, $searchPattern, $category);
-        } else {
-            $stmt->bind_param("ssss", $searchPattern, $searchPattern, $searchPattern, $searchPattern);
-        }
-    } else {
-        // Default mode - load all products
-        $sql = "SELECT p.id, p.j_name, p.image, p.price, p.discount, p.quality, ";
-        $sql .= "p.description, p.category, p.country, p.date_added, ";
-        $sql .= "COALESCE(SUM(oi.quantity), 0) as total_orders ";
-        $sql .= "FROM products p ";
-        $sql .= "LEFT JOIN order_items oi ON p.id = oi.product_id ";
-        if ($category !== 'all') {
-            $sql .= "WHERE p.category = ? ";
-        }
-        $sql .= "GROUP BY p.id";
-
-        $stmt = $conn->prepare($sql);
-        if ($category !== 'all') {
-            $stmt->bind_param("s", $category);
-        }
-    }
-
-    if (!$stmt->execute()) {
-        throw new Exception("Query execution failed: " . $stmt->error);
-    }
-
-    $result = $stmt->get_result();
-
-    $products = [];
-    while ($row = $result->fetch_assoc()) {
-        $products[] = $row;
-    }
-    $stmt->close();
-
-    /* 
-       ALGORITHM 1: CONTENT-BASED RECOMMENDATION
-       Matches products based on similarity to search query
-       Scoring: Name match(10), Category(5), Country(5), Quality(3)
-    */
-    function contentBasedScore(array $product, string $searchKey): int
-    {
-        $score = 0;
-        $key = strtolower($searchKey);
-
-        // Name match - highest priority
-        if (stripos($product['j_name'], $key) !== false) {
-            $score += 10;
-            // Bonus for exact word match
-            if (strpos(strtolower($product['j_name']), $key) === 0) {
-                $score += 5;
-            }
-        }
-
-        // Category match
-        if (stripos($product['category'], $key) !== false) {
-            $score += 5;
-        }
-
-        // Country match
-        if (stripos($product['country'], $key) !== false) {
-            $score += 5;
-        }
-
-        // Quality match
-        if (stripos($product['quality'], $key) !== false) {
-            $score += 3;
-        }
-
-        return $score;
-    }
-
-    /* 
-       ALGORITHM 2: COLLABORATIVE FILTERING
-       Recommends products based on popularity (total orders)
-       Used to identify bestsellers and trending items
-    */
-    function applyCollaborativeFiltering(&$products)
-    {
-        // Find max orders to calculate relative popularity
-        $maxOrders = 0;
-        foreach ($products as $p) {
-            if ($p['total_orders'] > $maxOrders) {
-                $maxOrders = $p['total_orders'];
-            }
-        }
-
-        foreach ($products as &$item) {
-            $orders = (int) $item['total_orders'];
-
-            // Bestseller: top 20% of orders
-            $item['is_bestseller'] = $maxOrders > 0 && $orders >= ($maxOrders * 0.6);
-
-            // Trending: recent orders with good frequency
-            $item['is_trending'] = $orders >= 5 && $orders < ($maxOrders * 0.6);
-
-            // Popularity score for ranking
-            $item['popularity_score'] = $orders;
-        }
-        unset($item);
-    }
-
-    // Apply algorithms
-    applyCollaborativeFiltering($products);
-
-    foreach ($products as &$item) {
-        $item['relevance_score'] = $key !== '' ? contentBasedScore($item, $key) : 0;
-        $item['final_price'] = $item['discount'] > 0
-            ? $item['price'] - ($item['price'] * $item['discount'] / 100)
-            : $item['price'];
-    }
-    unset($item);
-
-    /* 
-       SORTING (Professional E-commerce Standards)
-    */
-    switch ($sortBy) {
-        case 'all':
-            // Show all products - default to popularity
-            usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
-            break;
-
-        case 'popularity':
-            // Most ordered first (collaborative filtering)
-            usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
-            break;
-
-        case 'discount':
-            // Sort by highest discount (show all jerseys, not just with discount)
-            usort($products, fn($a, $b) => $b['discount'] <=> $a['discount']);
-            break;
-
-        case 'price_low':
-            usort($products, fn($a, $b) => $a['final_price'] <=> $b['final_price']);
-            break;
-
-        case 'price_high':
-            usort($products, fn($a, $b) => $b['final_price'] <=> $a['final_price']);
-            break;
-
-        case 'newest':
-            usort($products, fn($a, $b) => strtotime($b['date_added']) <=> strtotime($a['date_added']));
-            break;
-
-        case 'relevance':
-        default:
-            // Only use relevance scoring if search query exists
-            if ($key !== '') {
-                // Content-based + Collaborative (relevance + popularity)
-                usort($products, function ($a, $b) {
-                    $scoreA = ($a['relevance_score'] * 2) + ($a['popularity_score'] * 0.5);
-                    $scoreB = ($b['relevance_score'] * 2) + ($b['popularity_score'] * 0.5);
-                    return $scoreB <=> $scoreA;
-                });
-            } else {
-                // No search - default to popularity
-                usort($products, fn($a, $b) => $b['total_orders'] <=> $a['total_orders']);
-            }
-            break;
-    }
-
-    // Return JSON response
-    echo json_encode([
-        'products' => $products,
-        'total' => count($products),
-        'success' => true
-    ]);
-
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => $e->getMessage(),
-        'products' => [],
-        'success' => false
-    ]);
+$products = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $products[] = $row;
 }
+
+/* 
+   FILTER BY SEARCH KEYWORD
+ */
+if ($key != "") {
+    $products = array_filter($products, function ($p) use ($key) {
+        return (
+            stripos($p['j_name'], $key) !== false ||
+            stripos($p['category'], $key) !== false ||
+            stripos($p['country'], $key) !== false ||
+            stripos($p['quality'], $key) !== false
+        );
+    });
+    $products = array_values($products);
+}
+
+/* 
+   FILTER BY CATEGORY
+ */
+if ($category != "all") {
+    $products = array_filter($products, function ($p) use ($category) {
+        return $p['category'] == $category;
+    });
+    $products = array_values($products);
+}
+
+/* 
+   CONTENT BASED SCORE FUNCTION
+ */
+function contentScore($product, $key)
+{
+    $score = 0;
+
+    if (stripos($product['j_name'], $key) !== false)
+        $score += 10;
+    if (stripos($product['category'], $key) !== false)
+        $score += 5;
+    if (stripos($product['country'], $key) !== false)
+        $score += 5;
+    if (stripos($product['quality'], $key) !== false)
+        $score += 3;
+
+    return $score;
+}
+
+/* 
+   COLLABORATIVE FILTERING
+ */
+$maxOrders = 0;
+foreach ($products as $p) {
+    if ($p['total_orders'] > $maxOrders)
+        $maxOrders = $p['total_orders'];
+}
+
+foreach ($products as &$p) {
+
+    $p['popularity_score'] = $p['total_orders'];
+
+    $p['is_bestseller'] = ($maxOrders > 0 && $p['total_orders'] >= ($maxOrders * 0.6));
+    $p['is_trending'] = ($p['total_orders'] >= 5);
+
+    $p['final_price'] = ($p['discount'] > 0)
+        ? $p['price'] - ($p['price'] * $p['discount'] / 100)
+        : $p['price'];
+
+    $p['relevance_score'] = ($key != "") ? contentScore($p, $key) : 0;
+
+    $p['rank_score'] = ($p['relevance_score'] * 2) + ($p['popularity_score'] * 0.5);
+
+    $p['date_value'] = strtotime($p['date_added']);
+}
+unset($p);
+
+/* 
+   SIMPLE BUBBLE SORT
+ */
+function bubbleSort(&$arr, $field, $order)
+{
+    $n = count($arr);
+    for ($i = 0; $i < $n - 1; $i++) {
+        for ($j = 0; $j < $n - $i - 1; $j++) {
+
+            if ($order == "asc" && $arr[$j][$field] > $arr[$j + 1][$field]) {
+                $temp = $arr[$j];
+                $arr[$j] = $arr[$j + 1];
+                $arr[$j + 1] = $temp;
+            }
+
+            if ($order == "desc" && $arr[$j][$field] < $arr[$j + 1][$field]) {
+                $temp = $arr[$j];
+                $arr[$j] = $arr[$j + 1];
+                $arr[$j + 1] = $temp;
+            }
+        }
+    }
+}
+
+/* 
+   SORT CONTROL
+ */
+if ($sortBy == "price_low")
+    bubbleSort($products, "final_price", "asc");
+else if ($sortBy == "price_high")
+    bubbleSort($products, "final_price", "desc");
+else if ($sortBy == "discount")
+    bubbleSort($products, "discount", "desc");
+else if ($sortBy == "newest")
+    bubbleSort($products, "date_value", "desc");
+else if ($sortBy == "relevance")
+    bubbleSort($products, "rank_score", "desc");
+else
+    bubbleSort($products, "total_orders", "desc");
+
+/* 
+   SEND JSON RESPONSE
+ */
+echo json_encode([
+    "success" => true,
+    "total" => count($products),
+    "products" => $products
+]);
 ?>

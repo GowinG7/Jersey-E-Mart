@@ -173,6 +173,7 @@ include_once '../shared/commonlinks.php';
             'football' => ['title' => 'Football Jerseys', 'empty' => 'No football jerseys available.'],
             'cricket' => ['title' => 'National team Cricket Jerseys', 'empty' => 'National team cricket jerseys not available.'],
             'npl' => ['title' => 'NPL Jerseys', 'empty' => 'No NPL jerseys available.'],
+            'nsl' => ['title' => 'NSL Jerseys', 'empty' => 'No NSL jerseys available.']
         ];
         ?>
 
@@ -270,13 +271,15 @@ include_once '../shared/commonlinks.php';
                     <h6 class="fw-semibold"><i class="bi bi-geo-alt-fill me-2"></i>Address</h6>
                     <p class="mb-2">Bharatpur, Nepal</p>
 
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=Indrapuri+Mandir+Bharatpur+Nepal"
+                        target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm">
+                        Get Directions
+                    </a>
+                    <a href="https://www.google.com/maps/search/?api=1&query=Indrapuri+Mandir+Bharatpur+Nepal"
+                        target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
+                        View Larger Map
+                    </a>
 
-                    <div class="d-grid gap-2">
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=Bharatpur+Nepal" target="_blank"
-                            rel="noopener noreferrer" class="btn btn-success btn-sm">Get Directions</a>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Bharatpur+Nepal" target="_blank"
-                            rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">View Larger Map</a>
-                    </div>
                 </div>
             </div>
         </div>

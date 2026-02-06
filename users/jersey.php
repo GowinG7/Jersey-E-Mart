@@ -58,9 +58,12 @@ include_once '../shared/commonlinks.php';
             position: relative;
             z-index: 1;
         }
+
         .card .badge-overlay {
-            z-index: 5; /* Above image */
-            pointer-events: none; /* Don't block hover/clicks on card */
+            z-index: 5;
+            /* Above image */
+            pointer-events: none;
+            /* Don't block hover/clicks on card */
         }
 
         .card-title {
@@ -86,10 +89,11 @@ include_once '../shared/commonlinks.php';
         .filters-card {
             background: #fff;
             border-radius: 14px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
             padding: 14px 18px;
             border: 1px solid #e6f0ee;
         }
+
         .filters-card .label-text {
             font-size: 12px;
             font-weight: 600;
@@ -98,12 +102,14 @@ include_once '../shared/commonlinks.php';
             color: #5b7f7a;
             margin-bottom: 6px;
         }
+
         .filters-card .form-control,
         .filters-card .form-select {
             height: 46px;
             border-radius: 10px;
             border: 1px solid #d7e7e4;
         }
+
         .filters-card .helper {
             font-size: 13px;
             color: #6c7f7c;
@@ -164,15 +170,15 @@ include_once '../shared/commonlinks.php';
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div>
                             <div class="label-text">Find your jersey</div>
-                            <div class="helper">Search by name, team, or type. Filter by category and sort instantly.</div>
+                            <div class="helper">Search by name, team, or type. Filter by category and sort instantly.
+                            </div>
                         </div>
                         <div class="helper">Showing: <span id="resultCount" style="font-weight:600;">–</span></div>
                     </div>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
                         <div class="flex-grow-1">
-                            <input id="searchInput" class="form-control" type="search" 
-                                   placeholder="Search jerseys, teams, tournaments..."
-                                   oninput="filterAndSort()">
+                            <input id="searchInput" class="form-control" type="search"
+                                placeholder="Search jerseys, teams, tournaments..." oninput="filterAndSort()">
                         </div>
                         <div style="min-width:170px;">
                             <select id="categoryFilter" class="form-select" onchange="filterAndSort()">
@@ -345,38 +351,38 @@ include_once '../shared/commonlinks.php';
     <!-- Live Search JS -->
     <script>
         let allProducts = [];
-        
+
         // Load products on page load
         function loadProducts(sortBy = 'popularity', searchQuery = '', category = 'all') {
             const resultBox = document.getElementById("searchResult");
             const resultCount = document.getElementById("resultCount");
             const defaultProducts = document.getElementById("defaultProducts");
-            
+
             const xhr = new XMLHttpRequest();
-            const url = "live_search.php?sort=" + sortBy 
-                       + (searchQuery ? "&q=" + encodeURIComponent(searchQuery) : "")
-                       + (category ? "&category=" + encodeURIComponent(category) : "");
+            const url = "live_search.php?sort=" + sortBy
+                + (searchQuery ? "&q=" + encodeURIComponent(searchQuery) : "")
+                + (category ? "&category=" + encodeURIComponent(category) : "");
             console.log("Loading products: " + url);
 
             // Hide static defaults while loading dynamic data
             if (defaultProducts) defaultProducts.style.display = "none";
-            
+
             xhr.open("GET", url, true);
-            xhr.onload = function() {
+            xhr.onload = function () {
                 try {
                     console.log("Response status: " + xhr.status);
                     console.log("Response text: " + this.responseText.substring(0, 200));
-                    
+
                     const response = JSON.parse(this.responseText);
-                    
+
                     if (!response.success && response.error) {
                         resultBox.innerHTML = "<p class='text-center text-danger'><strong>Error:</strong> " + response.error + "</p>";
                         console.error("Server error:", response.error);
                         return;
                     }
-                    
+
                     allProducts = response.products || [];
-                    
+
                     if (allProducts.length > 0) {
                         resultCount.textContent = allProducts.length;
                         if (defaultProducts) defaultProducts.style.display = "none";
@@ -385,46 +391,52 @@ include_once '../shared/commonlinks.php';
                         resultCount.textContent = 0;
                         resultBox.innerHTML = "<p class='text-center text-muted'>No jerseys found</p>";
                     }
-                } catch(e) {
+                } catch (e) {
                     console.error('Parse error:', e);
                     console.log('Response:', this.responseText);
                     resultBox.innerHTML = "<p class='text-center text-danger'><strong>Parse Error:</strong> " + e.message + "<br><small>" + this.responseText.substring(0, 100) + "</small></p>";
                 }
             };
-            xhr.onerror = function() {
+            xhr.onerror = function () {
                 resultBox.innerHTML = "<p class='text-center text-danger'>Network error - could not load products</p>";
                 console.error("Network error");
             };
             xhr.send();
         }
-        
+
         // Filter and sort based on search + dropdown
         function filterAndSort() {
             const searchQuery = document.getElementById("searchInput").value.trim();
             const sortBy = document.getElementById("sortFilter").value;
             const category = document.getElementById("categoryFilter").value;
             console.log("Filter: '" + searchQuery + "', Sort: '" + sortBy + "', Category: '" + category + "'");
-            
+
             loadProducts(sortBy, searchQuery, category);
         }
-        
+
         function renderProducts(products) {
             const resultBox = document.getElementById("searchResult");
             resultBox.innerHTML = products.map(p => {
                 const img = p.image ? `../shared/products/${p.image}` : 'images/placeholder.png';
                 const finalPrice = p.discount > 0 ? p.price - (p.price * p.discount / 100) : p.price;
-                
+
                 let badges = '';
                 if (p.is_bestseller) badges += `<span class="badge badge-overlay bg-warning text-dark position-absolute" style="top:10px;left:10px;">Popular</span>`;
                 if (p.discount >= 15) badges += `<span class="badge badge-overlay bg-info text-white position-absolute" style="top:${p.is_bestseller ? '40px' : '10px'};left:10px;">Top Discount</span>`;
                 if (p.discount > 0) badges += `<span class="badge badge-overlay bg-danger position-absolute" style="top:10px;right:10px;">${p.discount}% OFF</span>`;
                 if (p.is_trending) badges += `<span class="badge badge-overlay bg-success position-absolute" style="top:${p.is_bestseller || p.discount >= 15 ? '70px' : '40px'};left:10px;">Trending</span>`;
-                
-                const priceHTML = p.discount > 0 
-                    ? `<span style="text-decoration:line-through; color:#888;">Rs ${p.price.toLocaleString()}</span>
-                       <b class="ms-2 text-success">Rs ${Math.floor(finalPrice).toLocaleString()}</b>`
-                    : `<b>Rs ${p.price.toLocaleString()}</b>`;
-                
+
+
+                const priceHTML = p.discount > 0
+                    ? `<span style="text-decoration:line-through; color:#888;">
+                        Rs ${Math.floor(p.price).toLocaleString()}
+                        </span>
+                        <b class="ms-2 text-success">
+                        Rs ${Math.floor(finalPrice).toLocaleString()}
+                        </b>`
+                    : `<b>Rs ${Math.floor(p.price).toLocaleString()}</b>`;
+
+
                 return `
                 <div class="col-sm-12 col-md-6 col-lg-4 mb-4">
                     <a href="view_jersey.php?id=${p.id}" class="text-decoration-none text-dark">
@@ -445,9 +457,9 @@ include_once '../shared/commonlinks.php';
                 </div>`;
             }).join('');
         }
-        
+
         // Load most popular products on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadProducts('popularity', '', document.getElementById('categoryFilter')?.value || 'all');
         });
     </script>
