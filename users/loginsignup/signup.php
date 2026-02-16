@@ -176,7 +176,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
                 <div class="error-message" id="email_error"></div>
             </div>
             <div class="form-group">
-                <label for="phone">Phone Number (Optional)</label>
+                <label for="phone">Phone Number</label>
                 <input type="tel" id="phone" name="phone" placeholder="Provide phone number for easy contact">
                 <div class="error-message" id="phone_error"></div>
             </div>

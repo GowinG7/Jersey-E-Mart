@@ -4,14 +4,18 @@ require_once '../shared/dbconnect.php';
 
 /* 
    READ INPUT VALUES
- */
-$key = isset($_GET['q']) ? strtolower(trim($_GET['q'])) : "";
+*/
+$key = "";
+if (isset($_GET['q'])) {
+    $key = trim($_GET['q']);
+}
+
 $sortBy = isset($_GET['sort']) ? $_GET['sort'] : "popularity";
 $category = isset($_GET['category']) ? $_GET['category'] : "all";
 
 /* 
-   CATEGORY VALUE MAPPING
- */
+   CATEGORY MAP
+*/
 $categoryMap = [
     'football' => 'Football',
     'cricket' => 'Cricket',
@@ -24,8 +28,8 @@ if ($category != "all" && isset($categoryMap[$category])) {
 }
 
 /* 
-   LOAD PRODUCTS FROM DATABASE
- */
+   LOAD PRODUCTS
+*/
 $sql = "SELECT p.*, COALESCE(SUM(oi.quantity),0) AS total_orders
         FROM products p
         LEFT JOIN order_items oi ON p.id = oi.product_id
@@ -39,93 +43,160 @@ while ($row = mysqli_fetch_assoc($result)) {
 }
 
 /* 
-   FILTER BY SEARCH KEYWORD
- */
-if ($key != "") {
-    $products = array_filter($products, function ($p) use ($key) {
-        return (
-            stripos($p['j_name'], $key) !== false ||
-            stripos($p['category'], $key) !== false ||
-            stripos($p['country'], $key) !== false ||
-            stripos($p['quality'], $key) !== false
-        );
-    });
-    $products = array_values($products);
-}
-
-/* 
-   FILTER BY CATEGORY
- */
-if ($category != "all") {
-    $products = array_filter($products, function ($p) use ($category) {
-        return $p['category'] == $category;
-    });
-    $products = array_values($products);
-}
-
-/* 
-   CONTENT BASED SCORE FUNCTION
- */
-function contentScore($product, $key)
+   SUBSTRING CHECK (Built-in)
+*/
+function contains($text, $search)
 {
-    $score = 0;
+    if ($search == "")
+        return true;
 
-    if (stripos($product['j_name'], $key) !== false)
-        $score += 10;
-    if (stripos($product['category'], $key) !== false)
-        $score += 5;
-    if (stripos($product['country'], $key) !== false)
-        $score += 5;
-    if (stripos($product['quality'], $key) !== false)
-        $score += 3;
-
-    return $score;
+    return strpos($text, $search) !== false;
 }
 
 /* 
-   COLLABORATIVE FILTERING
- */
-$maxOrders = 0;
-foreach ($products as $p) {
-    if ($p['total_orders'] > $maxOrders)
-        $maxOrders = $p['total_orders'];
+   FILTER PRODUCTS
+*/
+$filtered = [];
+
+for ($i = 0; $i < count($products); $i++) {
+
+    $match = true;
+
+    if ($key != "") {
+        if (
+            !contains($products[$i]['j_name'], $key) &&
+            !contains($products[$i]['category'], $key) &&
+            !contains($products[$i]['country'], $key) &&
+            !contains($products[$i]['quality'], $key)
+        ) {
+
+            $match = false;
+        }
+    }
+
+    if ($category != "all") {
+        if ($products[$i]['category'] != $category) {
+            $match = false;
+        }
+    }
+
+    if ($match) {
+        $filtered[] = $products[$i];
+    }
 }
 
-foreach ($products as &$p) {
-
-    $p['popularity_score'] = $p['total_orders'];
-
-    $p['is_bestseller'] = ($maxOrders > 0 && $p['total_orders'] >= ($maxOrders * 0.6));
-    $p['is_trending'] = ($p['total_orders'] >= 5);
-
-    $p['final_price'] = ($p['discount'] > 0)
-        ? $p['price'] - ($p['price'] * $p['discount'] / 100)
-        : $p['price'];
-
-    $p['relevance_score'] = ($key != "") ? contentScore($p, $key) : 0;
-
-    $p['rank_score'] = ($p['relevance_score'] * 2) + ($p['popularity_score'] * 0.5);
-
-    $p['date_value'] = strtotime($p['date_added']);
-}
-unset($p);
+$products = $filtered;
 
 /* 
-   SIMPLE BUBBLE SORT
- */
+   1️⃣ CONTENT BASED SCORE ALGORITHM
+*/
+function applyContentBasedScore(&$products, $key)
+{
+    for ($i = 0; $i < count($products); $i++) {
+
+        $score = 0;
+
+        if (contains($products[$i]['j_name'], $key))
+            $score += 10;
+        if (contains($products[$i]['category'], $key))
+            $score += 5;
+        if (contains($products[$i]['country'], $key))
+            $score += 5;
+        if (contains($products[$i]['quality'], $key))
+            $score += 3;
+
+        $products[$i]['relevance_score'] = $score;
+    }
+}
+
+/* 
+   2️⃣ COLLABORATIVE FILTERING ALGORITHM
+*/
+function applyCollaborativeFiltering(&$products)
+{
+    $maxOrders = 0;
+
+    /* Find Maximum Orders */
+    for ($i = 0; $i < count($products); $i++) {
+        if ($products[$i]['total_orders'] > $maxOrders) {
+            $maxOrders = $products[$i]['total_orders'];
+        }
+    }
+
+    /* Apply Popularity Logic */
+    for ($i = 0; $i < count($products); $i++) {
+
+        $products[$i]['popularity_score'] =
+            $products[$i]['total_orders'];
+
+        /* Bestseller */
+        if (
+            $maxOrders > 0 &&
+            $products[$i]['total_orders'] >= ($maxOrders * 0.6)
+        ) {
+            $products[$i]['is_bestseller'] = true;
+        } else {
+            $products[$i]['is_bestseller'] = false;
+        }
+
+        /* Trending */
+        if ($products[$i]['total_orders'] >= 5) {
+            $products[$i]['is_trending'] = true;
+        } else {
+            $products[$i]['is_trending'] = false;
+        }
+
+        /* Final Price Calculation */
+        if ($products[$i]['discount'] > 0) {
+            $products[$i]['final_price'] =
+                $products[$i]['price'] -
+                ($products[$i]['price'] *
+                    $products[$i]['discount'] / 100);
+        } else {
+            $products[$i]['final_price'] =
+                $products[$i]['price'];
+        }
+
+        /* Rank Score */
+        $products[$i]['rank_score'] =
+            ($products[$i]['relevance_score'] * 2) +
+            ($products[$i]['popularity_score'] * 0.5);
+
+        /* Date Value (YYYY-MM-DD → YYYYMMDD) */
+        $date = $products[$i]['date_added'];
+        $products[$i]['date_value'] =
+            ($date[0] . $date[1] . $date[2] . $date[3] .
+                $date[5] . $date[6] .
+                $date[8] . $date[9]);
+    }
+}
+
+/* 
+   3️⃣ BUBBLE SORT ALGORITHM
+*/
 function bubbleSort(&$arr, $field, $order)
 {
     $n = count($arr);
+
     for ($i = 0; $i < $n - 1; $i++) {
+
         for ($j = 0; $j < $n - $i - 1; $j++) {
 
-            if ($order == "asc" && $arr[$j][$field] > $arr[$j + 1][$field]) {
+            if (
+                $order == "asc" &&
+                $arr[$j][$field] > $arr[$j + 1][$field]
+            ) {
+
                 $temp = $arr[$j];
                 $arr[$j] = $arr[$j + 1];
                 $arr[$j + 1] = $temp;
             }
 
-            if ($order == "desc" && $arr[$j][$field] < $arr[$j + 1][$field]) {
+            if (
+                $order == "desc" &&
+                $arr[$j][$field] < $arr[$j + 1][$field]
+            ) {
+
                 $temp = $arr[$j];
                 $arr[$j] = $arr[$j + 1];
                 $arr[$j + 1] = $temp;
@@ -135,8 +206,14 @@ function bubbleSort(&$arr, $field, $order)
 }
 
 /* 
+   APPLY ALGORITHMS
+*/
+applyContentBasedScore($products, $key);
+applyCollaborativeFiltering($products);
+
+/* 
    SORT CONTROL
- */
+*/
 if ($sortBy == "price_low")
     bubbleSort($products, "final_price", "asc");
 else if ($sortBy == "price_high")
@@ -151,8 +228,8 @@ else
     bubbleSort($products, "total_orders", "desc");
 
 /* 
-   SEND JSON RESPONSE
- */
+   OUTPUT JSON
+*/
 echo json_encode([
     "success" => true,
     "total" => count($products),
