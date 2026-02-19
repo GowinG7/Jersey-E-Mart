@@ -118,18 +118,25 @@ include "header.php";
     <div class="row">
       <div class="col-md-6 mb-4">
         <form id="orderForm" action="place_order.php" method="post" class="bg-white p-4 rounded shadow-sm">
+
           <div class="mb-3">
             <label>Full name</label>
-            <input type="text" name="name" class="form-control" required>
+            <input type="text" name="name" id="name" class="form-control" required>
+            <small id="name_error" class="text-danger" style="display:none;"></small>
           </div>
+
           <div class="mb-3">
             <label>Delivery address</label>
-            <textarea name="location" class="form-control" required></textarea>
+            <textarea name="location" id="location" class="form-control" required></textarea>
+            <small id="location_error" class="text-danger" style="display:none;"></small>
           </div>
+
           <div class="mb-3">
             <label>Contact phone</label>
-            <input type="text" name="contact" class="form-control" required>
+            <input type="tel" name="contact" id="contact" class="form-control" required>
+            <small id="contact_error" class="text-danger" style="display:none;"></small>
           </div>
+
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Payment Option</label>
@@ -153,6 +160,8 @@ include "header.php";
                 </label>
               </div>
             </div>
+            <small id="payment_error" class="text-danger" style="display:none;"></small>
+
           </div>
 
           <input type="hidden" name="grand_total" value="<?php echo intval($grand_total); ?>">
@@ -205,6 +214,7 @@ include "header.php";
     </div>
   </div>
 
+  <script src="js/order_form.js"></script>
 
 </body>
 
