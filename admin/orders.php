@@ -107,7 +107,7 @@ $res = $stmt->get_result();
                     <th>Order ID</th>
                     <th>User</th>
                     <th>Location</th>
-                    <th>Items</th>
+                    <th>Items type</th>
                     <th>Grand Total</th>
                     <th>Payment</th>
                     <th>Payment Status</th>
