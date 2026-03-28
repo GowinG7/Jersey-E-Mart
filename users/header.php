@@ -4,14 +4,22 @@ include_once "../shared/commonlinks.php";
 
 // fetch cart count if user is logged in
 $cart_count = 0;
+$clear_guest_cart = false;
 if (isset($_SESSION['user_id'])) {
   $user_id = $_SESSION['user_id'];
   $res = mysqli_query($conn, "SELECT SUM(quantity) as total_items FROM cart_items WHERE user_id = $user_id");
   if ($row = mysqli_fetch_assoc($res)) {
     $cart_count = intval($row['total_items']);
   }
+
+  if (!empty($_SESSION['clear_guest_cart'])) {
+    $clear_guest_cart = true;
+    unset($_SESSION['clear_guest_cart']);
+  }
 }
 ?>
+
+<script src="js/guest_cart.js"></script>
 
 <style>
   /* Navbar links */
@@ -110,6 +118,12 @@ if (isset($_SESSION['user_id'])) {
 
         <?php else: ?>
 
+          <a href="displaycart.php" class="navbar-pill">
+            <i class="bi bi-cart"></i>
+            <span>Cart</span>
+            <span class="cart-badge" id="guestCartBadge" style="display:none;">0</span>
+          </a>
+
           <a href="loginsignup/login.php" class="navbar-pill">Login</a>
           <a href="loginsignup/signup.php" class="navbar-pill">Register</a>
 
@@ -119,3 +133,43 @@ if (isset($_SESSION['user_id'])) {
     </div>
   </div>
 </nav>
+
+<?php if (!isset($_SESSION['user_id'])): ?>
+  <script>
+    (function () {
+      const badge = document.getElementById("guestCartBadge");
+      if (!badge || !window.guestCart) {
+        return;
+      }
+
+      function refreshGuestBadge() {
+        const count = window.guestCart.getCount();
+        if (count > 0) {
+          badge.textContent = count;
+          badge.style.display = "inline-block";
+        } else {
+          badge.style.display = "none";
+        }
+      }
+
+      refreshGuestBadge();
+      document.addEventListener("guest-cart-updated", refreshGuestBadge);
+      window.addEventListener("storage", function (e) {
+        if (e.key === window.guestCart.storageKey) {
+          refreshGuestBadge();
+        }
+      });
+    })();
+  </script>
+<?php endif; ?>
+
+<?php if ($clear_guest_cart): ?>
+  <script>
+    (function () {
+      if (!window.guestCart) {
+        return;
+      }
+      window.guestCart.clearCart();
+    })();
+  </script>
+<?php endif; ?>
