@@ -24,6 +24,8 @@ if ($discount > 0) {
     $displayPrice = $basePrice - ($basePrice * $discount / 100);
 }
 
+$isLoggedIn = isset($_SESSION['user_id']);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -163,6 +165,17 @@ if ($discount > 0) {
         let selectedStock = 0;
 
         const hasSizes = <?php echo $hasSizes ? 'true' : 'false'; ?>;
+        const isLoggedIn = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
+
+        const productMeta = {
+            product_id: <?php echo intval($p['id']); ?>,
+            pname: <?php echo json_encode($p['j_name']); ?>,
+            category: <?php echo json_encode($p['category']); ?>,
+            image: <?php echo json_encode($p['image']); ?>,
+            base_price: <?php echo json_encode($basePrice); ?>,
+            discount: <?php echo json_encode($discount); ?>,
+            quality: <?php echo json_encode($p['quality'] ?? ''); ?>
+        };
 
         if (!hasSizes) {
             document.getElementById("addToCartBtn").disabled = true;
@@ -233,6 +246,30 @@ if ($discount > 0) {
                 return;
             }
 
+            if (!isLoggedIn && window.guestCart) {
+                const added = window.guestCart.addItem({
+                    product_id: productMeta.product_id,
+                    pname: productMeta.pname,
+                    category: productMeta.category,
+                    image: productMeta.image,
+                    base_price: productMeta.base_price,
+                    discount: productMeta.discount,
+                    price_after_discount: displayPrice,
+                    size: size,
+                    quality: productMeta.quality,
+                    print_name: "",
+                    print_number: "",
+                    quantity: qty,
+                    max_stock: selectedStock
+                });
+
+                if (added) {
+                    alert("Item added to cart. You can login later to checkout.");
+                    window.location.href = "displaycart.php";
+                }
+                return;
+            }
+
             window.location.href = `cart.php?id=<?php echo $id; ?>&size=${size}&qty=${qty}`;
         });
 
@@ -263,6 +300,37 @@ if ($discount > 0) {
             if (nameInput.value.trim() !== "") final += 100;
             if (numberInput.value.trim() !== "") final += 50;
             finalPriceInput.value = Math.round(final);
+
+            if (!isLoggedIn && window.guestCart) {
+                e.preventDefault();
+
+                const added = window.guestCart.addItem({
+                    product_id: productMeta.product_id,
+                    pname: productMeta.pname,
+                    category: productMeta.category,
+                    image: productMeta.image,
+                    base_price: productMeta.base_price,
+                    discount: productMeta.discount,
+                    price_after_discount: Math.round(final),
+                    size: selectedSize,
+                    quality: productMeta.quality,
+                    print_name: nameInput.value.trim(),
+                    print_number: numberInput.value.trim(),
+                    quantity: parseInt(selectedQty, 10) || 1,
+                    max_stock: selectedStock
+                });
+
+                if (added) {
+                    const modalEl = document.getElementById("customizeModal");
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    alert("Item added to cart. You can login later to checkout.");
+                    window.location.href = "displaycart.php";
+                }
+                return false;
+            }
         });
 
         qtyInput.addEventListener("input", function () {
