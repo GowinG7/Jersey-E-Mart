@@ -82,7 +82,17 @@ if ($isLoggedIn) {
                                     <td data-label="Discount"><?php echo $row['discount'] ? $row['discount'] . '%' : ''; ?></td>
                                     <td data-label="Quantity">
                                         <form method="POST" action="update.php" class="update-form">
-                                            <input type="number" name="qty[<?php echo $row['id']; ?>]" value="<?php echo $quantity; ?>" min="1" max="<?php echo $stock; ?>">
+                                            <input type="number" name="qty[<?php echo $row['id']; ?>]" value="<?php echo $quantity; ?>" min="1" <?php echo $stock > 0 ? 'max="' . $stock . '"' : ''; ?>
+                                                oninput="this.setCustomValidity('')"
+                                                oninvalid="
+                                                    if (this.validity.rangeOverflow) {
+                                                        this.setCustomValidity('There is only <?php echo $stock; ?> item<?php echo ($stock == 1 ? '' : 's'); ?> left in the stock.');
+                                                    } else if (this.validity.rangeUnderflow) {
+                                                        this.setCustomValidity('Quantity must be at least 1.');
+                                                    } else {
+                                                        this.setCustomValidity('Please enter a valid quantity.');
+                                                    }
+                                                ">
                                             <button type="submit" name="update_cart" class="btn" <?php echo $stock == 0 ? 'disabled' : ''; ?>>Update</button>
                                         </form>
                                     </td>

@@ -56,7 +56,7 @@ if (isset($_POST['update_cart']) && isset($_POST['qty']) && is_array($_POST['qty
 
     // 5. Alert message
     if ($stockError) {
-        $_SESSION['alert'] = "One or more items were not updated because requested quantity exceeds available stock.";
+        $_SESSION['alert'] = "requested quantity exceeds available stock.";
         $_SESSION['alert_type'] = "danger";
     } else {
         $_SESSION['alert'] = "Cart updated successfully.";
