@@ -2,14 +2,16 @@
 session_start();
 require_once("../shared/dbconnect.php");
 
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['admin_id'])) {
-    echo json_encode(['success' => false]);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized. Please login again.']);
     exit;
 }
 
 $order_id = intval($_POST['order_id'] ?? 0);
 if (!$order_id) {
-    echo json_encode(['success' => false]);
+    echo json_encode(['success' => false, 'message' => 'Invalid order id.']);
     exit;
 }
 
@@ -25,9 +27,20 @@ if (!$order) {
     exit;
 }
 
-// Example rule: prevent deleting completed/pending shipped orders
+// Rule: prevent deleting ONLY when BOTH are complete
+// Rule: prevent deleting if ANY of them is complete (Delivered or Paid)
 if ($order['order_status'] === 'Delivered' || $order['payment_status'] === 'Completed') {
-    echo json_encode(['success' => false, 'message' => 'Cannot delete delivered orders or orders with completed payment.']);
+    if ($order['order_status'] === 'Delivered' && $order['payment_status'] === 'Completed') {
+        echo json_encode(['success' => false, 'message' => 'Cannot delete: Order status is Delivered and payment status is Paid.']);
+        exit;
+    }
+
+    if ($order['order_status'] === 'Delivered') {
+        echo json_encode(['success' => false, 'message' => 'Cannot delete: Order status is Delivered.']);
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Cannot delete: Payment status is Paid.']);
     exit;
 }
 

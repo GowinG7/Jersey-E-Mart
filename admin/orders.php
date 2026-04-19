@@ -149,21 +149,21 @@ $res = $stmt->get_result();
 
                             <td>
                                 <?php if ($row['payment_status'] === 'Completed'): ?>
-                                    <button class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="payment_status" data-value="Completed">Paid</button>
+                                    <button type="button" class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="payment_status" data-value="Pending">Paid</button>
                                 <?php else: ?>
-                                    <button class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="payment_status" data-value="Pending">Pending</button>
+                                    <button type="button" class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="payment_status" data-value="Completed">Pending</button>
                                 <?php endif; ?>
                             </td>
 
                             <td>
                                 <?php if ($row['order_status'] === 'Delivered'): ?>
-                                    <button class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="order_status" data-value="Delivered">Delivered</button>
+                                    <button type="button" class="btn btn-sm btn-success toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="order_status" data-value="Pending">Delivered</button>
                                 <?php else: ?>
-                                    <button class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
-                                        data-type="order_status" data-value="Pending">Pending</button>
+                                    <button type="button" class="btn btn-sm btn-warning text-dark toggle-status" data-id="<?= $row['order_id'] ?>"
+                                        data-type="order_status" data-value="Delivered">Pending</button>
                                 <?php endif; ?>
                             </td>
 
@@ -175,9 +175,9 @@ $res = $stmt->get_result();
                                 <?= $row['order_date'] ?>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-primary view-items" data-order="<?= $row['order_id'] ?>">View
+                                <button type="button" class="btn btn-sm btn-primary view-items" data-order="<?= $row['order_id'] ?>">View
                                     Items</button>
-                                <button class="btn btn-sm btn-danger delete-order mt-1"
+                                <button type="button" class="btn btn-sm btn-danger delete-order mt-1"
                                     data-id="<?= $row['order_id'] ?>">Delete</button>
 
                             </td>
@@ -209,7 +209,51 @@ $res = $stmt->get_result();
         </div>
     </div>
 
+    <!-- Confirmation Modal (prevents accidental status toggles) -->
+    <div class="modal fade" id="confirmToggleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Confirm status change</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmToggleText" style="white-space: pre-line;">
+                    Warning: This may affect revenue/stock.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmToggleBtn">Yes, update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast (shows success/error feedback) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+        <div id="statusToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"
+            aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="statusToastBody">Updated</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function showStatusToast(message, variant = 'success') {
+            const toastEl = document.getElementById('statusToast');
+            const bodyEl = document.getElementById('statusToastBody');
+            if (!toastEl || !bodyEl) return;
+
+            bodyEl.textContent = message;
+
+            toastEl.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning', 'text-bg-info');
+            toastEl.classList.add(`text-bg-${variant}`);
+
+            bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 2000 }).show();
+        }
+
         document.querySelectorAll('.view-items').forEach(btn => {
             btn.addEventListener('click', function () {
                 const orderId = this.dataset.order;
@@ -227,56 +271,116 @@ $res = $stmt->get_result();
             });
         });
 
+        let pendingToggleButton = null;
+        const confirmToggleModalEl = document.getElementById('confirmToggleModal');
+        const confirmToggleTextEl = document.getElementById('confirmToggleText');
+        const confirmToggleBtn = document.getElementById('confirmToggleBtn');
+        const confirmToggleModal = confirmToggleModalEl ? bootstrap.Modal.getOrCreateInstance(confirmToggleModalEl) : null;
 
+        function updateToggleButtonUI(buttonEl, column, updatedValue) {
+            if (column === 'order_status') {
+                buttonEl.className = updatedValue === 'Delivered'
+                    ? 'btn btn-sm btn-success toggle-status'
+                    : 'btn btn-sm btn-warning text-dark toggle-status';
+                buttonEl.textContent = updatedValue;
+                buttonEl.dataset.value = updatedValue === 'Delivered' ? 'Pending' : 'Delivered';
+                return;
+            }
+
+            if (column === 'payment_status') {
+                buttonEl.className = updatedValue === 'Completed'
+                    ? 'btn btn-sm btn-success toggle-status'
+                    : 'btn btn-sm btn-warning text-dark toggle-status';
+                buttonEl.textContent = updatedValue === 'Completed' ? 'Paid' : 'Pending';
+                buttonEl.dataset.value = updatedValue === 'Completed' ? 'Pending' : 'Completed';
+            }
+        }
+
+        function runToggle(buttonEl) {
+            const orderId = buttonEl.dataset.id;
+            const column = buttonEl.dataset.type;
+            const newValue = buttonEl.dataset.value;
+
+            confirmToggleBtn.disabled = true;
+            confirmToggleBtn.textContent = 'Updating...';
+
+            fetch('update_order_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'order_id=' + encodeURIComponent(orderId)
+                    + '&column=' + encodeURIComponent(column)
+                    + '&value=' + encodeURIComponent(newValue)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        updateToggleButtonUI(buttonEl, column, data.value);
+                        const label = column === 'order_status' ? 'Order status' : 'Payment status';
+                        showStatusToast(`${label} updated to ${data.value}`, 'success');
+                    } else {
+                        showStatusToast('Update failed!', 'danger');
+                    }
+                })
+                .catch(() => {
+                    showStatusToast('Network error while updating.', 'danger');
+                })
+                .finally(() => {
+                    confirmToggleBtn.disabled = false;
+                    confirmToggleBtn.textContent = 'Yes, update';
+                });
+        }
 
         document.querySelectorAll('.toggle-status').forEach(btn => {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!confirmToggleModal || !confirmToggleTextEl || !confirmToggleBtn) {
+                    // Fallback: if modal missing for any reason, keep old behavior safe
+                    return;
+                }
+
+                pendingToggleButton = this;
+
                 const orderId = this.dataset.id;
                 const column = this.dataset.type;
                 const newValue = this.dataset.value;
+                const label = column === 'order_status' ? 'Order status' : 'Payment status';
 
-                fetch('update_order_status.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'order_id=' + orderId + '&column=' + column + '&value=' + newValue
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Update button style dynamically
-                            if (column === 'order_status') {
-                                this.className = data.value === 'Delivered' ? 'btn btn-sm btn-success toggle-status' : 'btn btn-sm btn-warning text-dark toggle-status';
-                                this.textContent = data.value;
-                                this.dataset.value = data.value === 'Delivered' ? 'Pending' : 'Delivered';
-                            } else if (column === 'payment_status') {
-                                this.className = data.value === 'Completed' ? 'btn btn-sm btn-success toggle-status' : 'btn btn-sm btn-warning text-dark toggle-status';
-                                this.textContent = data.value === 'Completed' ? 'Paid' : 'Pending';
-                                this.dataset.value = data.value === 'Completed' ? 'Pending' : 'Completed';
-                            }
-                        } else {
-                            alert('Update failed!');
-                        }
-                    });
+                confirmToggleTextEl.textContent = `Warning: This may affect daily revenue and stock.\n\nOrder #${orderId}: Change ${label} to "${newValue}"?`;
+                confirmToggleModal.show();
             });
+        });
+
+        confirmToggleBtn?.addEventListener('click', function () {
+            if (!pendingToggleButton) return;
+            confirmToggleModal?.hide();
+            runToggle(pendingToggleButton);
+            pendingToggleButton = null;
         });
 
         //for confirming delete order
         document.querySelectorAll('.delete-order').forEach(btn => {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 const orderId = this.dataset.id;
                 if (confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
                     fetch('delete_order.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'order_id=' + orderId
+                        body: 'order_id=' + encodeURIComponent(orderId)
                     })
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
                                 document.getElementById('orderRow' + orderId).remove();
+                                showStatusToast('Order deleted successfully.', 'success');
                             } else {
-                                alert('Failed to delete order.');
+                                showStatusToast(data.message || 'Failed to delete order.', 'danger');
                             }
+                        })
+                        .catch(() => {
+                            showStatusToast('Network error while deleting order.', 'danger');
                         });
                 }
             });
